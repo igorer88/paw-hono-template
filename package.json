@@ -1,0 +1,28 @@
+{
+  "name": "paw-hono-template",
+  "description": "Hono base template with error handler, security headers, E2E tests, and more.",
+  "version": "0.1.0",
+  "author": "Igor Escalona",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.x",
+    "pnpm": ">=11.x"
+  },
+  "scripts": {
+    "format": "oxfmt --write",
+    "lint": "oxlint",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "hono": "^4.12.32"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "wrangler": "^4.110.0"
+  }
+}

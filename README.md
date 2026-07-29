@@ -1,0 +1,160 @@
+<p align="center">
+  <a href="./" target="blank"><img src=".github/assets/paw.svg" width="100" alt="Paw Logo" /></a>
+  <!-- Hono logo placeholder — add when available -->
+</p>
+
+<p align="center">Paw is a production-ready Hono template for Cloudflare Workers.<br />Secured by design. Agnostic by architecture — also deployable on AWS Lambda, GCP Cloud Run, Bun, Deno, or Node.js.</p>
+<p align="center">
+<a href="https://nodejs.org" target="_blank"><img src="https://img.shields.io/badge/node-%3E%3D24.x-green.svg" alt="Node.js version" /></a>
+<a href="https://pnpm.io" target="_blank"><img src="https://img.shields.io/badge/pnpm-%3E%3D11.x-cc00ff.svg" alt="pnpm version" /></a>
+<a href="./LICENSE" target="_blank"><img src="https://img.shields.io/github/license/igorer88/paw-hono-template" alt="Package License" /></a>
+</p>
+
+## Description
+
+A production-ready [Hono](https://hono.dev) base template for **Cloudflare Workers** — built for secure and scalable HTTP APIs. Pre-configured with a modular middleware stack, centralized error handling, CORS, security headers, and a consistent response envelope. Designed to be runtime-agnostic — the same code also deploys to AWS Lambda, GCP Cloud Run, Bun, Deno, or Node.js with minimal changes.
+
+## Features
+
+- **Runtime** — Hono v4, Cloudflare Workers, runtime-agnostic design
+- **Security** — CORS whitelist, security headers (HSTS, CSP, XSS), centralized error handler (no stack leaks in production), consistent response envelope. Rate limiting is handled at the Cloudflare WAF level — configure via dashboard or `wrangler.jsonc` (see [Cloudflare docs](https://developers.cloudflare.com/waf/custom-rules/rate-limiting/)). Hono-level rate limiting (via Durable Objects) is only needed for dynamic per-user limits.
+- **Developer Experience** — Strict TypeScript, `@/` import alias, Oxlint + Oxfmt, modular file structure
+- **Infrastructure** — Wrangler observability, `--minify` deploy, single environment config
+
+## Roadmap
+
+- Testing (vitest)
+- Request validation (zod)
+- `API_LOG_LEVEL` — multi-level logging: silent, default, debug
+- IP log anonymization based on `API_LOG_LEVEL` and `IP_LOG_LEVEL`
+
+## Project setup
+
+```bash
+pnpm install
+```
+
+## Environment Setup
+
+Copy the example environment file and configure your variables:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+### Required Environment Variables
+
+| Variable | Type | Description |
+|---|---|---|
+| `API_SECRET_KEY` | string | Secret key for API authentication |
+| `APP_DOMAIN` | string | Domain for CORS whitelist (e.g., `example.com`) |
+
+Production vars are set in `wrangler.jsonc` under `env.production.vars`. Secrets use `wrangler secret put <NAME>`.
+
+## Compile and run
+
+```bash
+# development
+pnpm run dev
+
+# deploy to production
+pnpm run deploy
+
+# regenerate Cloudflare types
+pnpm run cf-typegen
+```
+
+## API Example
+
+```bash
+curl http://localhost:8787/health
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "description": "Health check passed",
+  "data": {
+    "message": "Hello Hono!"
+  }
+}
+```
+
+## Project Structure
+
+```
+src/
+├── index.ts              # App entrypoint — mounts middleware + routes
+├── types.ts              # Bindings, Variables, AppInstance types
+├── middleware/
+│   ├── index.ts          # Barrel — re-exports all middleware
+│   ├── error.ts          # Error handler + 404 handler
+│   └── security.ts       # Custom CORS middleware
+├── routes/
+│   └── health.ts         # GET /health endpoint
+└── shared/
+    └── utils.ts          # Pure utility functions
+docs/
+├── architecture.md       # Design intent, request lifecycle, extensibility
+└── code_guidelines.md    # Coding conventions, response shape, error handling
+```
+
+## Error Handling
+
+All responses follow a consistent envelope:
+
+```typescript
+{
+  success: boolean
+  description?: string   // human-readable summary; always present on errors
+  data?: unknown
+  error?: {
+    message: string
+    stack?: string       // only in development (ENVIRONMENT=development)
+  }
+}
+```
+
+- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message } }` with the preserved status code (500 if unset)
+- Unmatched routes return `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: GET /path" } }` with 404
+- Stack traces are never exposed in production
+
+## Linting and Formatting
+
+```bash
+pnpm run lint
+pnpm run format
+```
+
+## Tests
+
+No test runner is configured yet. `vitest/globals` is referenced in `tsconfig.json` types but vitest is not installed. Testing setup is on the roadmap.
+
+## Deployment Discussion
+
+When starting a new project with this template, consider the deployment strategy:
+
+| Pattern | Request flow | Versioning approach |
+|---|---|---|
+| **Single Worker per API** | One entrypoint receives all requests — Hono routes internally | Sub-router prefix (`/v1/resource`) |
+| **Separate Workers per resource** | Cloudflare routes `/health` → Worker A, `/users` → Worker B | Each Worker is its own Hono app; versioning lives at the routing layer |
+
+**Single Worker per API** is the default pattern this template uses. It keeps routing and versioning in application code, requires no Cloudflare-side changes when adding endpoints, and is the simplest to maintain.
+
+**Separate Workers per resource** is for cases where endpoints need independent scaling, deploy cycles, or team ownership. Each Worker is a separate Hono app with its own entrypoint — versioning and routing are managed at the Cloudflare edge.
+
+### Portability
+
+This template runs on Cloudflare Workers and is built on Hono, which supports [AWS Lambda](https://github.com/honojs/hono/tree/main/src/adapter/aws-lambda), Lambda@Edge, Deno, Bun, Vercel, Fastly Compute, and Node.js natively. GCP Cloud Run works via the Node.js adapter (`@hono/node-server`). Porting requires swapping only the entrypoint adapter in `src/index.ts`.
+
+> GCP Cloud Functions and Azure Functions have no official adapter — porting requires manual integration with the platform's HTTP handler.
+
+See [docs/architecture.md#9-runtime-portability](./docs/architecture.md#9-runtime-portability) for deployment patterns and the env var compatibility shim.
+
+When porting to AWS Lambda, the deployment patterns above map to API Gateway configurations — detailed in the architecture doc.
+
+## License
+
+[MIT licensed](./LICENSE).
