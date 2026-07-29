@@ -1,14 +1,10 @@
 {
   "name": "paw-hono-template",
-  "description": "Hono base template with error handler, security headers, E2E tests, and more.",
   "version": "0.1.0",
-  "author": "Igor Escalona",
   "private": true,
+  "description": "Hono base template with error handler, security headers, E2E tests, and more.",
+  "author": "Igor Escalona",
   "type": "module",
-  "engines": {
-    "node": ">=24.x",
-    "pnpm": ">=11.x"
-  },
   "scripts": {
     "format": "oxfmt --write",
     "lint": "oxlint",
@@ -18,18 +14,27 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "prepare": "husky"
   },
   "dependencies": {
     "hono": "^4.12.32"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.18.8",
+    "@commitlint/cli": "^21.2.1",
     "@types/node": "^24.13.3",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-istanbul": "^4.1.10",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0",
     "oxfmt": "^0.61.0",
     "oxlint": "^1.76.0",
     "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
-  }
+  },
+  "engines": {
+    "node": ">=24.x",
+    "pnpm": ">=11.x"
+  },
+  "packageManager": "pnpm@11.3.0"
 }

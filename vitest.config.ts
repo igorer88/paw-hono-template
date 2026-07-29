@@ -6,20 +6,26 @@ export default defineConfig({
   plugins: [
     cloudflareTest({
       wrangler: {
-        configPath: './wrangler.jsonc',
-      },
-    }),
+        configPath: './wrangler.jsonc'
+      }
+    })
   ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-    },
+      '@': resolve(__dirname, './src')
+    }
   },
   test: {
     globals: true,
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text', 'html'],
-    },
-  },
+      thresholds: {
+        lines: 65,
+        functions: 65,
+        branches: 65,
+        statements: 65
+      }
+    }
+  }
 })
