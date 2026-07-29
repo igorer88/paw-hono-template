@@ -5,7 +5,8 @@
  * @returns {boolean} boolean
  */
 export const isEmptyObject = (objectName: object): boolean => {
-  return objectName && Object.keys(objectName).length === 0 && objectName.constructor === Object
+  if (!objectName) return false
+  return Object.keys(objectName).length === 0 && objectName.constructor === Object
 }
 
 
