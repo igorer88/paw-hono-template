@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
+import { envSchema } from '@/env'
 import { customCors, errorHandler, notFoundHandler } from '@/middleware'
 import { healthRouter } from '@/routes/health'
 import type { AppInstance } from '@/types'
@@ -21,8 +22,12 @@ app.notFound(notFoundHandler)
 app.route('/health', healthRouter)
 
 // Example index route
-app.get('/', (c) => c.text('🚀 Paw Hono Worker Engine Active.'))
+app.get('/', c => c.text('🚀 Paw Hono Worker Engine Active.'))
 
-export default app
-
-
+// 5. Wrangler entrypoint — validates env vars at cold start, fails fast
+export default {
+  fetch(request: Request, env: Record<string, unknown>, executionContext: ExecutionContext) {
+    const validatedEnv = envSchema.parse(env)
+    return app.fetch(request, validatedEnv, executionContext)
+  }
+}
