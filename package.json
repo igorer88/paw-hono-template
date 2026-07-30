@@ -15,7 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "prepare": "husky"
+    "prepare": "husky",
+    "semantic-release": "semantic-release"
   },
   "dependencies": {
     "hono": "^4.12.32",
@@ -24,12 +25,16 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.18.8",
     "@commitlint/cli": "^21.2.1",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/git": "^11.0.1",
     "@types/node": "^24.13.3",
     "@vitest/coverage-istanbul": "^4.1.10",
+    "conventional-changelog-conventionalcommits": "^10.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.2.0",
     "oxfmt": "^0.61.0",
     "oxlint": "^1.76.0",
+    "semantic-release": "^25.0.8",
     "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   },

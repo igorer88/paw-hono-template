@@ -73,27 +73,29 @@ Register in `src/index.ts` **before** `app.onError(errorHandler)` to be covered 
 
 ## Commit convention
 
-Format: `🎉 (scope)type: message`
+Format: `type(scope): message` (emoji optional as decoration)
 
-| Type       | Emoji | Usage                    |
-| ---------- | ----- | ------------------------ |
-| `feat`     | 🎉    | New feature              |
-| `fix`      | 🐛    | Bug fix                  |
-| `chore`    | 🧹    | Maintenance, tooling     |
-| `refactor` | ♻️    | Code restructuring       |
-| `test`     | 🧪    | Adding or updating tests |
-| `docs`     | 📝    | Documentation only       |
-| `style`    | 💄    | Formatting, lint fixes   |
-| `perf`     | ⚡️    | Performance improvement  |
+| Type       | Usage                    |
+| ---------- | ------------------------ |
+| `feat`     | New feature              |
+| `fix`      | Bug fix                  |
+| `chore`    | Maintenance, tooling     |
+| `refactor` | Code restructuring       |
+| `test`     | Adding or updating tests |
+| `docs`     | Documentation only       |
+| `style`    | Formatting, lint fixes   |
+| `perf`     | Performance improvement  |
 
 Examples:
 
-- `🎉 (app)feat: add health endpoint`
-- `🐛 (middleware)fix: handle missing ALLOWED_ORIGIN env var`
-- `♻️ (routes)refactor: extract user validation logic`
-- `📝 (docs)docs: add architecture blueprint`
+- `feat(app): add health endpoint`
+- `fix(middleware): handle missing ALLOWED_ORIGIN env var`
+- `refactor(routes): extract user validation logic`
+- `docs(docs): add architecture blueprint`
 
 Scopes describe the changed area: `(app)`, `(middleware)`, `(routes)`, `(shared)`, `(auth)`, `(docs)`, `(infra)`, `(root)`, etc.
+
+This format follows the [Conventional Commits](https://www.conventionalcommits.org/) specification, enabling automated versioning and changelog generation via semantic-release.
 
 ## Git flow
 
@@ -104,7 +106,36 @@ Scopes describe the changed area: `(app)`, `(middleware)`, `(routes)`, `(shared)
 - `release/*` — branch from `develop`, merge to `main` + back to `develop`.
 - `hotfix/*` — branch from `main`, merge to `main` + `develop`.
 
-## Post-merge cleanup
+## Publish workflow
+
+Automated release orchestrated by **semantic-release** via `.github/workflows/release.yml`.
+
+| Trigger             | Branch      | Tag                | Release type       |
+| ------------------- | ----------- | ------------------ | ------------------ |
+| Push to `main`      | `main`      | `vX.Y.Z`           | Full release       |
+| Push to `release/*` | `release/*` | `vX.Y.Z-staging.N` | Staging prerelease |
+
+### Lifecycle
+
+1. Merge `release/*` into `main` (or push directly to either branch)
+2. `release.yml` runs: lint → test → build → semantic-release
+3. semantic-release analyzes commits since last tag, determines version bump, writes `CHANGELOG.md`, bumps `package.json`, creates git tag, commits changes back, and creates a GitHub Release with `dist/` attached
+4. Staging prereleases from `release/*` are marked as "Pre-release" on GitHub
+
+### Configuration
+
+- `release.config.js` — branch rules, plugin pipeline, release rules per commit type
+- `chore`, `test`, `style`, `refactor`, `docs` commits do not trigger a release
+- `feat` → minor bump, `fix`/`perf` → patch bump, breaking changes (`!`) → major bump
+- Use `BREAKING CHANGE` footer or `type!:` for breaking changes
+
+### Post-release
+
+After a full release on `main`:
+
+1. Merge `main` back into `develop`
+2. `git checkout develop && git pull`
+3. Delete the `release/*` branch locally and on remote
 
 After a PR is merged:
 
@@ -112,6 +143,8 @@ After a PR is merged:
 2. `git branch -d <branch-name>` — delete the local feature branch
 
 For `release/*` and `hotfix/*`, repeat with `main` after merging there.
+
+After a PR is merged to `main` (release): merge `main` back into `develop` and delete the `release/*` or `hotfix/*` branch.
 
 The first thing in a real project: `git checkout -b develop && git push -u origin develop`.
 
@@ -135,6 +168,7 @@ pnpm run format       # oxfmt --write — rewrites files in place
 pnpm run test         # vitest run — runs all tests
 pnpm run test:watch   # vitest — watch mode
 pnpm run test:coverage # vitest run --coverage — with v8 coverage
+pnpm run semantic-release # manual semantic-release dry-run (local) or full run (CI)
 ```
 
 ## Code conventions
