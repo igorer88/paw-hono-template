@@ -53,7 +53,7 @@ Key points:
 - Stack traces only included when `ENVIRONMENT=development` (checked at runtime in `src/middleware/error.ts`)
 - 404 returns `{ success: false, error: { message: "Route not found: {method} {path}" } }`
 - Error handler preserves existing response status; falls back to 500 if status is 200 (unset)
-- CORS middleware whitelists `http://localhost:*` and `*.{APP_DOMAIN}`; falls back to `https://{APP_DOMAIN}`
+- CORS middleware always allows localhost; validates against comma-separated `ALLOWED_ORIGIN` with `*` wildcard; falls back to first entry
 - CORS preflight cached 86400s (24h)
 
 ## Adding a new route
@@ -89,7 +89,7 @@ Format: `🎉 (scope)type: message`
 Examples:
 
 - `🎉 (app)feat: add health endpoint`
-- `🐛 (middleware)fix: handle missing APP_DOMAIN env var`
+- `🐛 (middleware)fix: handle missing ALLOWED_ORIGIN env var`
 - `♻️ (routes)refactor: extract user validation logic`
 - `📝 (docs)docs: add architecture blueprint`
 

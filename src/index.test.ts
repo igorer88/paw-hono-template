@@ -3,7 +3,7 @@ import worker from './index'
 const bindings: Record<string, unknown> = {
   ENVIRONMENT: 'development',
   API_SECRET_KEY: 'test-secret',
-  APP_DOMAIN: 'example.com'
+  ALLOWED_ORIGIN: 'https://app.example.com'
 }
 
 const ctx = { waitUntil: () => {} } as unknown as ExecutionContext

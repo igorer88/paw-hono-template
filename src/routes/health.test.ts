@@ -5,7 +5,7 @@ import type { AppInstance } from '@/types'
 const bindings = {
   ENVIRONMENT: 'development' as const,
   API_SECRET_KEY: 'test-secret',
-  APP_DOMAIN: 'example.com',
+  ALLOWED_ORIGIN: 'https://app.example.com'
 }
 
 describe('Health endpoint', () => {
@@ -28,7 +28,7 @@ describe('Health endpoint', () => {
     expect(body).toMatchObject({
       success: true,
       description: 'Health check passed',
-      data: { message: 'Hello Hono!' },
+      data: { message: 'Hello Hono!' }
     })
   })
 })

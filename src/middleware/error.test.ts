@@ -5,12 +5,12 @@ import type { AppInstance } from '@/types'
 const bindings = {
   ENVIRONMENT: 'development' as const,
   API_SECRET_KEY: 'test-secret',
-  APP_DOMAIN: 'example.com',
+  ALLOWED_ORIGIN: 'https://app.example.com'
 }
 
 const productionBindings = {
   ...bindings,
-  ENVIRONMENT: 'production' as const,
+  ENVIRONMENT: 'production' as const
 }
 
 describe('errorHandler', () => {
@@ -76,7 +76,7 @@ describe('errorHandler', () => {
     expect(body).toMatchObject({
       success: false,
       description: 'Something went wrong',
-      error: { message: 'shape test' },
+      error: { message: 'shape test' }
     })
   })
 })
@@ -93,7 +93,7 @@ describe('notFoundHandler', () => {
     expect(body).toMatchObject({
       success: false,
       description: 'Verify the URL and HTTP method',
-      error: { message: 'Route not found: GET /unknown' },
+      error: { message: 'Route not found: GET /unknown' }
     })
   })
 })
