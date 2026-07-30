@@ -10,6 +10,12 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "ALLOWED_ORIGIN": "",
+    "LOGGER_LEVELS": "info",
+    "IP_LOG_LEVEL": "partial"
+  },
   "env": {
     "production": {
       "vars": {
@@ -17,9 +23,6 @@
       }
     }
   }
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",

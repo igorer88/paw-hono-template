@@ -117,9 +117,11 @@ The first thing in a real project: `git checkout -b develop && git push -u origi
 
 ## Env var management
 
-See `docs/architecture.md` §8.1 Env Var Management for the full details.
+See `docs/architecture.md` §8 Operational Considerations — Env Var Management for the full details.
 
-Key additional rule: all env vars must be declared in `src/types.ts` under the `Bindings` type before use.
+Non-secret vars live in `wrangler.jsonc` under `vars`. Secrets live in `.dev.vars` (local) and `wrangler secret put` (production).
+
+Key additional rule: all env vars must be declared in `src/types.ts` under the `Bindings` type before use (the zod schema in `src/env.ts` is the single source of truth).
 
 ## Commands
 
