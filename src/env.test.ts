@@ -91,6 +91,33 @@ describe('envSchema', () => {
       })
     ).toThrow()
   })
+
+  it('defaults IP_LOG_LEVEL to partial', () => {
+    const result = envSchema.parse({
+      API_SECRET_KEY: 'secret',
+      ALLOWED_ORIGIN: 'https://app.example.com'
+    })
+    expect(result.IP_LOG_LEVEL).toBe('partial')
+  })
+
+  it('accepts all valid IP_LOG_LEVEL values', () => {
+    for (const level of ['none', 'full', 'partial'] as const) {
+      const result = envSchema.parse({
+        API_SECRET_KEY: 'secret',
+        IP_LOG_LEVEL: level
+      })
+      expect(result.IP_LOG_LEVEL).toBe(level)
+    }
+  })
+
+  it('fails when IP_LOG_LEVEL is invalid', () => {
+    expect(() =>
+      envSchema.parse({
+        API_SECRET_KEY: 'secret',
+        IP_LOG_LEVEL: 'enabled'
+      })
+    ).toThrow()
+  })
 })
 
 describe('validateEnv', () => {

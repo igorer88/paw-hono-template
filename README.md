@@ -25,8 +25,6 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 
 - Testing (vitest)
 - Request validation (zod)
-- `API_LOG_LEVEL` — multi-level logging: silent, default, debug
-- IP log anonymization based on `API_LOG_LEVEL` and `IP_LOG_LEVEL`
 
 ## Project setup
 
@@ -44,11 +42,12 @@ cp .dev.vars.example .dev.vars
 
 ### Required Environment Variables
 
-| Variable         | Type                          | Description                                                                                                                                            |
-| ---------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `API_SECRET_KEY` | string                        | Secret key for API authentication                                                                                                                      |
-| `ALLOWED_ORIGIN` | string                        | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Localhost is always allowed.           |
-| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'` | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds headers and query params. |
+| Variable         | Type                            | Description                                                                                                                                            |
+| ---------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `API_SECRET_KEY` | string                          | Secret key for API authentication                                                                                                                      |
+| `ALLOWED_ORIGIN` | string                          | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Localhost is always allowed.           |
+| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds headers and query params. |
+| `IP_LOG_LEVEL`   | `'none' \| 'full' \| 'partial'` | Client IP logging. `none` omits IP, `full` logs the raw IP, `partial` masks the last octet/group (default).                                            |
 
 Production vars are set in `wrangler.jsonc` under `env.production.vars`. Secrets use `wrangler secret put <NAME>`.
 
