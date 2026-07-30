@@ -5,11 +5,13 @@ describe('envSchema', () => {
     const result = envSchema.parse({
       ENVIRONMENT: 'development',
       API_SECRET_KEY: 'secret',
-      ALLOWED_ORIGIN: 'https://app.example.com'
+      ALLOWED_ORIGIN: 'https://app.example.com',
+      LOGGER_LEVELS: 'debug'
     })
     expect(result.ENVIRONMENT).toBe('development')
     expect(result.API_SECRET_KEY).toBe('secret')
     expect(result.ALLOWED_ORIGIN).toBe('https://app.example.com')
+    expect(result.LOGGER_LEVELS).toBe('debug')
   })
 
   it('defaults ALLOWED_ORIGIN to empty string', () => {
@@ -60,6 +62,33 @@ describe('envSchema', () => {
   it('fails when API_SECRET_KEY is missing', () => {
     expect(() =>
       envSchema.parse({ ENVIRONMENT: 'development', ALLOWED_ORIGIN: 'https://app.example.com' })
+    ).toThrow()
+  })
+
+  it('defaults LOGGER_LEVELS to info', () => {
+    const result = envSchema.parse({
+      API_SECRET_KEY: 'secret',
+      ALLOWED_ORIGIN: 'https://app.example.com'
+    })
+    expect(result.LOGGER_LEVELS).toBe('info')
+  })
+
+  it('accepts all valid LOGGER_LEVELS values', () => {
+    for (const level of ['none', 'info', 'debug'] as const) {
+      const result = envSchema.parse({
+        API_SECRET_KEY: 'secret',
+        LOGGER_LEVELS: level
+      })
+      expect(result.LOGGER_LEVELS).toBe(level)
+    }
+  })
+
+  it('fails when LOGGER_LEVELS is invalid', () => {
+    expect(() =>
+      envSchema.parse({
+        API_SECRET_KEY: 'secret',
+        LOGGER_LEVELS: 'verbose'
+      })
     ).toThrow()
   })
 })

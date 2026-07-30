@@ -60,7 +60,7 @@ Fast, typed routing built on Web Standards. Supports path parameters, query stri
 
 ### Global Middleware Stack
 
-- **Logging** (`hono/logger`) — logs method, path, status code, and response time per request
+- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds headers and query params)
 - **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and Content-Security-Policy headers
 - **CORS** (`src/middleware/security.ts`) — always allows localhost origin (any protocol/port); validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) support; falls back to first entry; preflight cached 86400s
 
@@ -88,7 +88,7 @@ Incoming HTTP Request
        │
        ▼
   Middleware chain (registered order for '*' paths):
-     1. logger()         — log request line
+     1. customLogger     — log request (level controlled by LOGGER_LEVELS)
      2. secureHeaders()  — set HSTS, CSP, XSS headers
      3. customCors       — validate origin, set CORS headers
         │
@@ -118,6 +118,7 @@ type Bindings = {
   ENVIRONMENT: 'production' | 'staging' | 'development'
   API_SECRET_KEY: string
   ALLOWED_ORIGIN: string
+  LOGGER_LEVELS: 'none' | 'info' | 'debug'
 }
 ```
 
