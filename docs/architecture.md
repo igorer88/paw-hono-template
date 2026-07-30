@@ -122,7 +122,13 @@ type Bindings = {
 }
 ```
 
-Declared in `src/types.ts`. Accessible in every handler and middleware via `c.env`. Cloudflare Workers injects these at runtime from `wrangler.jsonc` (production) or `.dev.vars` (local). The auto-generated `worker-configuration.d.ts` mirrors these for the `CloudflareBindings` interface.
+Declared in `src/types.ts`. Accessible in every handler and middleware via `c.env`. Cloudflare Workers injects these at runtime from `wrangler.jsonc` (non-secret `vars`) and `.dev.vars` / `wrangler secret put` (secrets). The auto-generated `worker-configuration.d.ts` mirrors these for the `CloudflareBindings` interface.
+
+### Env Var Split
+
+Non-secret vars (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`) live in `wrangler.jsonc` under `vars`, with sensible defaults for local dev. `ENVIRONMENT` defaults to `development` in base `vars` and overrides to `production` under `env.production.vars`.
+
+Secrets (`API_SECRET_KEY`) stay in `.dev.vars` (local) and `wrangler secret put` (production) — never committed to version control.
 
 ### Variables (Request-Scoped State)
 
@@ -188,10 +194,19 @@ Place pure functions in `src/shared/`. No Hono imports, no side effects at modul
 
 ### Env Var Management
 
-- **Local secrets**: `.dev.vars` (gitignored) — `VARIABLE_NAME=value`
-- **Production vars**: set in `wrangler.jsonc` under `env.production.vars`. Currently only `ENVIRONMENT=production`.
-- **Secrets** (API keys, tokens): use `wrangler secret put <NAME>` — never commit secrets to `wrangler.jsonc`.
-- After adding or changing bindings, run `pnpm run cf-typegen` to regenerate `worker-configuration.d.ts`.
+Vars are split by sensitivity:
+
+| Type                 | Source                                           | Location                          |
+| -------------------- | ------------------------------------------------ | --------------------------------- |
+| Non-secret vars      | `wrangler.jsonc` → `vars` (base + env overrides) | Committed to version control      |
+| Secrets (local)      | `.dev.vars`                                      | Gitignored                        |
+| Secrets (production) | `wrangler secret put <NAME>`                     | Cloudflare dashboard, not in repo |
+
+**Non-secret vars** (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `ENVIRONMENT`) are in `wrangler.jsonc` under base `vars` with sensible defaults. `ENVIRONMENT` overrides to `production` under `env.production.vars`.
+
+**Secrets** (`API_SECRET_KEY`) are in `.dev.vars` for local dev and managed via `wrangler secret put` for production — never committed.
+
+After adding or changing bindings (KV, R2, D1, etc.), run `pnpm run cf-typegen` to regenerate `worker-configuration.d.ts`. Plain `vars` changes do not need typegen.
 
 ### CORS Origin Whitelist
 
@@ -267,3 +282,18 @@ app.use('*', async (c, next) => {
 ```
 
 This merges Lambda event properties with `process.env`, making `c.env.ENVIRONMENT` access work on both platforms.
+
+### Secrets and Vars by Platform
+
+This template splits non-secret vars (`wrangler.jsonc` → `vars`) from secrets (`.dev.vars` / `wrangler secret put`). When porting, apply the same principle — non-secrets in environment variables, secrets in the platform's secret store:
+
+| Platform            | Non-secret vars                       | Secrets                                             |
+| ------------------- | ------------------------------------- | --------------------------------------------------- |
+| **Cloudflare**      | `wrangler.jsonc` → `vars`             | `.dev.vars` (local), `wrangler secret put` (prod)   |
+| **AWS Lambda**      | Lambda env vars (CloudFormation / UI) | AWS Secrets Manager or SSM Parameter Store          |
+| **GCP Cloud Run**   | `env:` in `service.yaml` or Console   | Secret Manager (mounted as env var or volume)       |
+| **Azure Functions** | App Settings in Function App config   | Key Vault references (`@Microsoft.KeyVault(...)`)   |
+| **Vercel**          | `vercel.json` → `env` or dashboard    | Encrypted env vars (UI or `vercel secret`)          |
+| **Bun / Deno**      | `process.env` via `.env` or shell     | `.env` (gitignored), platform-specific secret store |
+
+The zod schema in `src/env.ts` validates all vars at cold start regardless of platform — keep it as the single source of truth. Only the injection mechanism changes.
