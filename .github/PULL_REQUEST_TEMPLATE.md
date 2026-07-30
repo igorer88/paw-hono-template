@@ -2,6 +2,10 @@
 
 <!-- Describe the change and why it's needed -->
 
+## 📦 Changes
+
+<!-- Bullet list of what changed -->
+
 ## 🏷️ Type of change
 
 - [ ] 🎉 feat (new feature)
