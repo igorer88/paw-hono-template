@@ -31,7 +31,7 @@ See `docs/architecture.md` §6 for the full dependency table.
 Registration order in `src/index.ts` is significant:
 
 ```
-app.use('*', logger())        // 1. Logging first
+app.use('*', customLogger)    // 1. Logging first (level via LOGGER_LEVELS)
 app.use('*', secureHeaders()) // 2. Security headers
 app.use('*', customCors)      // 3. CORS
 app.onError(errorHandler)     // 4. Error catch-all (after middleware, before routes)
