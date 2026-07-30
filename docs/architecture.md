@@ -116,7 +116,6 @@ The middleware chain runs on all `*` paths before route matching. Each middlewar
 ```typescript
 type Bindings = {
   ENVIRONMENT: 'production' | 'staging' | 'development'
-  API_SECRET_KEY: string
   ALLOWED_ORIGIN: string
   LOGGER_LEVELS: 'none' | 'info' | 'debug'
 }
@@ -128,7 +127,7 @@ Declared in `src/types.ts`. Accessible in every handler and middleware via `c.en
 
 Non-secret vars (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`) live in `wrangler.jsonc` under `vars`, with sensible defaults for local dev. `ENVIRONMENT` defaults to `development` in base `vars` and overrides to `production` under `env.production.vars`.
 
-Secrets (`API_SECRET_KEY`) stay in `.dev.vars` (local) and `wrangler secret put` (production) — never committed to version control.
+No secrets are required by default. If auth middleware is added later, use `.dev.vars` (local) and `wrangler secret put` (production) — never committed to version control.
 
 ### Variables (Request-Scoped State)
 
@@ -204,7 +203,7 @@ Vars are split by sensitivity:
 
 **Non-secret vars** (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `ENVIRONMENT`) are in `wrangler.jsonc` under base `vars` with sensible defaults. `ENVIRONMENT` overrides to `production` under `env.production.vars`.
 
-**Secrets** (`API_SECRET_KEY`) are in `.dev.vars` for local dev and managed via `wrangler secret put` for production — never committed.
+No secrets are required by default. If auth middleware is added later, add secrets via `.dev.vars` (local) and `wrangler secret put` (production) — never committed.
 
 After adding or changing bindings (KV, R2, D1, etc.), run `pnpm run cf-typegen` to regenerate `worker-configuration.d.ts`. Plain `vars` changes do not need typegen.
 

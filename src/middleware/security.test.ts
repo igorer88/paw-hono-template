@@ -4,13 +4,11 @@ import type { AppInstance } from '@/types'
 
 const bindings = {
   ENVIRONMENT: 'development' as const,
-  API_SECRET_KEY: 'test-secret',
   ALLOWED_ORIGIN: 'https://app.example.com,https://*.example.com'
 }
 
 const noAllowedBindings = {
   ENVIRONMENT: 'development' as const,
-  API_SECRET_KEY: 'test-secret',
   ALLOWED_ORIGIN: ''
 }
 
