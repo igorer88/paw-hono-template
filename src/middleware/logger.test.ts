@@ -5,7 +5,6 @@ import type { AppInstance } from '@/types'
 
 const baseBindings = {
   ENVIRONMENT: 'development' as const,
-  API_SECRET_KEY: 'test-secret',
   ALLOWED_ORIGIN: ''
 }
 
