@@ -44,10 +44,10 @@ cp .dev.vars.example .dev.vars
 
 ### Required Environment Variables
 
-| Variable | Type | Description |
-|---|---|---|
-| `API_SECRET_KEY` | string | Secret key for API authentication |
-| `APP_DOMAIN` | string | Domain for CORS whitelist (e.g., `example.com`) |
+| Variable         | Type   | Description                                                                                                                                  |
+| ---------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `API_SECRET_KEY` | string | Secret key for API authentication                                                                                                            |
+| `ALLOWED_ORIGIN` | string | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Localhost is always allowed. |
 
 Production vars are set in `wrangler.jsonc` under `env.production.vars`. Secrets use `wrangler secret put <NAME>`.
 
@@ -136,10 +136,10 @@ No test runner is configured yet. `vitest/globals` is referenced in `tsconfig.js
 
 When starting a new project with this template, consider the deployment strategy:
 
-| Pattern | Request flow | Versioning approach |
-|---|---|---|
-| **Single Worker per API** | One entrypoint receives all requests — Hono routes internally | Sub-router prefix (`/v1/resource`) |
-| **Separate Workers per resource** | Cloudflare routes `/health` → Worker A, `/users` → Worker B | Each Worker is its own Hono app; versioning lives at the routing layer |
+| Pattern                           | Request flow                                                  | Versioning approach                                                    |
+| --------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Single Worker per API**         | One entrypoint receives all requests — Hono routes internally | Sub-router prefix (`/v1/resource`)                                     |
+| **Separate Workers per resource** | Cloudflare routes `/health` → Worker A, `/users` → Worker B   | Each Worker is its own Hono app; versioning lives at the routing layer |
 
 **Single Worker per API** is the default pattern this template uses. It keeps routing and versioning in application code, requires no Cloudflare-side changes when adding endpoints, and is the simplest to maintain.
 

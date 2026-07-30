@@ -33,41 +33,52 @@ paw-hono-template/
 ## 2. Core Design Principles
 
 ### Decoupling
+
 The middleware stack is agnostic to route handlers. Routes never import middleware directly — all wiring happens in `src/index.ts`. The Hono framework is runtime-agnostic; swapping Cloudflare Workers for AWS Lambda, Bun, or Deno requires replacing only the single entrypoint file.
 
 ### Async-First
+
 Cloudflare Workers are async by default. All middleware and handlers use async/await. I/O operations (fetch, KV, D1, R2, Queues) are non-blocking. The `nodejs_compat` flag in `wrangler.jsonc` enables Node.js APIs within the Workers runtime.
 
 ### Streaming & Backpressure
+
 Hono supports `c.stream()` and `c.body()` with ReadableStream for chunked responses. The Workers runtime implements the Web Streams API, allowing large payloads to stream without buffering in memory. This is essential for staying within Workers memory limits (128 MB free, up to 256 MB+ paid).
 
 ### DRY
+
 Cross-cutting concerns (logging, security headers, CORS) are implemented once as reusable middleware in `src/middleware/`. Shared utilities live in `src/shared/` as pure functions with no Hono imports.
 
 ### YAGNI / KISS
+
 Bindings and Variables in `src/types.ts` are concrete and minimal. No speculative abstractions. Add a new env var or request-scoped variable only when a route needs it. Stubbed bindings in `wrangler.jsonc` remain commented out until required.
 
 ## 3. Core Capabilities
 
 ### HTTP Server (Hono)
+
 Fast, typed routing built on Web Standards. Supports path parameters, query strings, and JSON body parsing. Runs on Cloudflare Workers' `fetch` event.
 
 ### Global Middleware Stack
+
 - **Logging** (`hono/logger`) — logs method, path, status code, and response time per request
 - **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and Content-Security-Policy headers
-- **CORS** (`src/middleware/security.ts`) — validates origin against `http://localhost:*` and `*.{APP_DOMAIN}`; falls back to `https://{APP_DOMAIN}`; preflight cached 86400s
+- **CORS** (`src/middleware/security.ts`) — always allows localhost origin (any protocol/port); validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) support; falls back to first entry; preflight cached 86400s
 
 ### Centralized Error Handling
+
 - **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? } }`. Stack traces only when `ENVIRONMENT=development`.
 - **notFound** — catches unmatched routes, returns `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: {method} {path}" } }` with 404.
 
 ### Health Check
+
 `GET /health` returns `{ success: true, description: "Health check passed", data: { message: "Hello Hono!" } }`. The canonical target for load balancer pings and uptime monitoring.
 
 ### Request-Scoped Context
+
 `c.set()` / `c.get()` for per-request data (e.g., authenticated user ID, request tracing ID) via the generic `Variables` type.
 
 ### Observability
+
 Wrangler-native tracing with 100% head sampling rate (configurable in `wrangler.jsonc` `observability.head_sampling_rate`).
 
 ## 4. Request Lifecycle
@@ -101,45 +112,52 @@ The middleware chain runs on all `*` paths before route matching. Each middlewar
 ## 5. Type System & Abstractions
 
 ### Bindings (Environment Variables)
+
 ```typescript
 type Bindings = {
   ENVIRONMENT: 'production' | 'staging' | 'development'
   API_SECRET_KEY: string
-  APP_DOMAIN: string
+  ALLOWED_ORIGIN: string
 }
 ```
+
 Declared in `src/types.ts`. Accessible in every handler and middleware via `c.env`. Cloudflare Workers injects these at runtime from `wrangler.jsonc` (production) or `.dev.vars` (local). The auto-generated `worker-configuration.d.ts` mirrors these for the `CloudflareBindings` interface.
 
 ### Variables (Request-Scoped State)
+
 ```typescript
 type Variables = {
   userId?: string
 }
 ```
+
 Set via `c.set('userId', value)` in middleware (e.g., auth middleware), read via `c.get('userId')` in downstream handlers. Typed through the Hono generic — no type casts needed.
 
 ### AppInstance (Composite Type)
+
 ```typescript
 type AppInstance = { Bindings: Bindings; Variables: Variables }
 ```
+
 Defined in `src/types.ts` and imported by every route file and `src/index.ts`. Passed as the generic parameter to `new Hono<AppInstance>()` in the entrypoint and all sub-routers, ensuring type consistency across the entire application.
 
 ## 6. Tech Stack
 
-| Dependency | Where | Role |
-|---|---|---|
-| `hono ^4.12.32` | dependencies | Web framework — routing, middleware, runtime-agnostic |
-| `wrangler ^4.110.0` | devDependencies | Workers runtime, dev server, deploy, typegen, secrets |
-| `oxlint ^1.76.0` | devDependencies | Linter — typescript/unicorn/oxc plugins |
-| `oxfmt ^0.61.0` | devDependencies | Formatter — no semicolons, single quotes, trailing comma none |
-| `@types/node ^24.13.3` | devDependencies | Node.js type definitions for `nodejs_compat` |
-| TypeScript | dev tool | Strict mode, ESNext target, Bundler module resolution |
+| Dependency             | Where           | Role                                                          |
+| ---------------------- | --------------- | ------------------------------------------------------------- |
+| `hono ^4.12.32`        | dependencies    | Web framework — routing, middleware, runtime-agnostic         |
+| `wrangler ^4.110.0`    | devDependencies | Workers runtime, dev server, deploy, typegen, secrets         |
+| `oxlint ^1.76.0`       | devDependencies | Linter — typescript/unicorn/oxc plugins                       |
+| `oxfmt ^0.61.0`        | devDependencies | Formatter — no semicolons, single quotes, trailing comma none |
+| `@types/node ^24.13.3` | devDependencies | Node.js type definitions for `nodejs_compat`                  |
+| TypeScript             | dev tool        | Strict mode, ESNext target, Bundler module resolution         |
 
 `pnpm-workspace.yaml` allows builds for `esbuild` and `workerd` — required by wrangler's internal dependencies.
 
 ## 7. Extensibility
 
 ### Adding a Route Sub-Router
+
 1. Create `src/routes/<name>.ts`
 2. `import { Hono } from 'hono'` + `import type { AppInstance } from '../types'`
 3. `const router = new Hono<AppInstance>()`
@@ -148,6 +166,7 @@ Defined in `src/types.ts` and imported by every route file and `src/index.ts`. P
 6. In `src/index.ts`: import and `app.route('/prefix', <name>Router)`
 
 ### Adding Global Middleware
+
 1. Create `src/middleware/<name>.ts`
 2. Implement `(c: Context, next: Next) => Promise<Response | void>`
 3. Add re-export line to `src/middleware/index.ts`
@@ -155,33 +174,39 @@ Defined in `src/types.ts` and imported by every route file and `src/index.ts`. P
 5. Register after `onError` only if the middleware should bypass error wrapping
 
 ### Adding Shared Utilities
+
 Place pure functions in `src/shared/`. No Hono imports, no side effects at module level. Import via `@/shared/<name>`.
 
 ## 8. Operational Considerations
 
 ### Workers Execution Model
+
 - Each request runs in an isolated V8 isolate. Global state does not persist across requests (use Durable Objects, KV, or D1 for stateful needs).
 - Cold starts add ~5-10ms latency on the first request after idle. Free plan memory limit is 128 MB; paid is 256 MB+.
 - `nodejs_compat` compatibility flag is enabled in `wrangler.jsonc`, providing Node.js API shims (Buffer, setTimeout, crypto, etc.).
 
 ### Env Var Management
+
 - **Local secrets**: `.dev.vars` (gitignored) — `VARIABLE_NAME=value`
 - **Production vars**: set in `wrangler.jsonc` under `env.production.vars`. Currently only `ENVIRONMENT=production`.
 - **Secrets** (API keys, tokens): use `wrangler secret put <NAME>` — never commit secrets to `wrangler.jsonc`.
 - After adding or changing bindings, run `pnpm run cf-typegen` to regenerate `worker-configuration.d.ts`.
 
-### CORS Domain Whitelist
-- Allows `http://localhost:*` (development, any port)
-- Allows `*.${APP_DOMAIN}` subdomains
-- Falls back to `https://${APP_DOMAIN}` when origin does not match either pattern
+### CORS Origin Whitelist
+
+- Always allows localhost (any protocol/port) for local development
+- Allows origins matching `ALLOWED_ORIGIN` — a comma-separated list supporting `*` wildcards (e.g., `https://app.example.com,https://*.example.com`)
+- Falls back to the first entry in `ALLOWED_ORIGIN` when the request origin does not match; if `ALLOWED_ORIGIN` is empty, returns no CORS header (denies the request)
 - Preflight (`OPTIONS`) responses cached for 86400 seconds (24 hours)
-- `APP_DOMAIN` must be set in all environments or CORS falls back to the origin domain
+- `ALLOWED_ORIGIN` defaults to empty — configure it in production or use `wrangler secret put`
 
 ### Observability Costs
+
 - `head_sampling_rate: 1` traces 100% of requests. Consider lowering to `0.1` (10%) in high-traffic production to avoid billing surprises.
 - Traces are visible in the Cloudflare Dashboard under Workers & Pages → your worker → Logs.
 
 ### Testing Gap
+
 - No test runner is configured. `vitest/globals` appears in `tsconfig.json` types but vitest itself is not in dependencies.
 - When adding tests, use vitest with wrangler's `SELF` binding for integration tests against the deployed worker.
 - See `AGENTS.md` for code conventions, commands, and middleware registration rules.
@@ -207,10 +232,10 @@ export const handler = handle(app)
 
 When deploying this Worker on Lambda, the architecture changes depending on how you configure API Gateway:
 
-| Config | Request flow | Versioning | Code changes |
-|---|---|---|---|
-| **Single function** | API Gateway proxies all paths → one Lambda → Hono routes internally | Sub-router prefix (`/v1/resource`) | Just the entrypoint adapter |
-| **Separate functions** | API Gateway routes `/health` → Lambda A, `/users` → Lambda B | API Gateway config maps each path | Each Lambda is a separate Hono app; versioning moves to infra |
+| Config                 | Request flow                                                        | Versioning                         | Code changes                                                  |
+| ---------------------- | ------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------- |
+| **Single function**    | API Gateway proxies all paths → one Lambda → Hono routes internally | Sub-router prefix (`/v1/resource`) | Just the entrypoint adapter                                   |
+| **Separate functions** | API Gateway routes `/health` → Lambda A, `/users` → Lambda B        | API Gateway config maps each path  | Each Lambda is a separate Hono app; versioning moves to infra |
 
 **Single function** is recommended — it keeps versioning in application code (`app.route('/v1', ...)`), requires no API Gateway route-level changes when adding endpoints, and matches this template's design.
 
