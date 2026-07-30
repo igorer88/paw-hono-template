@@ -296,3 +296,7 @@ This template splits non-secret vars (`wrangler.jsonc` → `vars`) from secrets 
 | **Bun / Deno**      | `process.env` via `.env` or shell     | `.env` (gitignored), platform-specific secret store |
 
 The zod schema in `src/env.ts` validates all vars at cold start regardless of platform — keep it as the single source of truth. Only the injection mechanism changes.
+
+### Universal Build for Porting
+
+The default `pnpm build` produces a Cloudflare Workers-specific bundle. When porting to another runtime, run `tsc --outDir dist/universal` to produce a platform-agnostic ESM build — see the entrypoint adapter table above for platform-specific details.
