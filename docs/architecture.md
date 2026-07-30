@@ -242,6 +242,19 @@ When deploying this Worker on Lambda, the architecture changes depending on how 
 
 **Separate functions** is for cases where endpoints need independent scaling, deploy cycles, or team ownership. Each Lambda is a separate Hono app with its own entrypoint. Sub-router versioning does not apply — versioning is managed at the API Gateway level.
 
+### Client IP Header When Porting
+
+Client IP extraction in `src/shared/ip.ts` uses `cf-connecting-ip` as the primary source, with `x-forwarded-for` and `x-real-ip` as fallbacks. The `cf-connecting-ip` header is Cloudflare-specific — it is set by Cloudflare's reverse proxy and is not present on other platforms. When porting to another runtime:
+
+| Platform              | Primary IP source                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| **AWS Lambda**        | `event.headers['X-Forwarded-For']` or `event.requestContext.identity.sourceIp`                  |
+| **GCP Cloud Run**     | `x-forwarded-for` header                                                                        |
+| **Azure Functions**   | `x-forwarded-for` header (via `req.headers`) or `req.socket.remoteAddress` (Node.js adapter)    |
+| **Bun / Deno / Node** | `x-forwarded-for` or `req.socket.remoteAddress` (available only in non-Workers runtime context) |
+
+Update `getClientIp` in `src/shared/ip.ts` to match the target platform's request object and IP header conventions.
+
 ### Env Var Compatibility When Porting
 
 Workers injects env vars via `c.env`. On Lambda, `c.env` receives the API Gateway event object instead of `process.env`. Add this shim as the first middleware when porting:
