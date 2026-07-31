@@ -19,15 +19,18 @@ paw-hono-template/
 ├── .dev.vars                    # Local env vars (gitignored)
 └── src/
     ├── index.ts                 # App entrypoint — creates Hono app, mounts middleware + routes
+    ├── env.ts                   # Zod schema + env validation — single source of truth for vars
     ├── types.ts                 # Bindings (env), Variables (request-scoped), AppInstance composite type
     ├── middleware/
     │   ├── index.ts             # Barrel — re-exports public API
-    │   ├── error.ts             # errorHandler (stack traces in dev only) + notFoundHandler
-    │   └── security.ts          # CORS middleware (domain whitelist, 24h preflight cache)
+    │   ├── error.ts             # errorHandler (stack traces in dev only, generic 5xx) + notFoundHandler
+    │   ├── logger.ts            # Request logging (levels, IP logging, header/query redaction)
+    │   └── security.ts          # CORS middleware (origin whitelist, deny-by-default, 24h preflight cache)
     ├── routes/
     │   └── health.ts            # Health-check sub-router (/health)
     └── shared/
-        └── utils.ts             # Pure functions: isEmptyObject, anonymizeIp
+        ├── ip.ts                # Pure functions: getClientIp, anonymizeIp
+        └── utils.ts             # Pure functions: isEmptyObject
 ```
 
 ## 2. Core Design Principles
@@ -60,13 +63,13 @@ Fast, typed routing built on Web Standards. Supports path parameters, query stri
 
 ### Global Middleware Stack
 
-- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds headers and query params)
-- **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and Content-Security-Policy headers
-- **CORS** (`src/middleware/security.ts`) — always allows localhost origin (any protocol/port); validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) support; falls back to first entry; preflight cached 86400s
+- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds redacted headers and query keys). Sensitive headers (`authorization`, `cookie`, `proxy-authorization`, `x-api-key`, `cf-connecting-ip`) are redacted as `[REDACTED]`; the request line omits the query string. Client IP logging respects `IP_LOG_LEVEL`: `none`, `full`, `partial` (masked).
+- **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and a strict Content-Security-Policy header
+- **CORS** (`src/middleware/security.ts`) — deny-by-default: unmatched origins receive no CORS header. Allows localhost/127.0.0.1 (any protocol/port) only when `ENVIRONMENT=development`. Validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) suffix support; bare `*` is rejected at env validation. Preflight cached 86400s
 
 ### Centralized Error Handling
 
-- **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? } }`. Stack traces only when `ENVIRONMENT=development`.
+- **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? } }`. Stack traces only when `ENVIRONMENT=development`. 5xx responses use the generic message `Internal Server Error`; 4xx keep the original error message.
 - **notFound** — catches unmatched routes, returns `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: {method} {path}" } }` with 404.
 
 ### Health Check
@@ -118,6 +121,7 @@ type Bindings = {
   ENVIRONMENT: 'production' | 'staging' | 'development'
   ALLOWED_ORIGIN: string
   LOGGER_LEVELS: 'none' | 'info' | 'debug'
+  IP_LOG_LEVEL: 'none' | 'full' | 'partial'
 }
 ```
 
@@ -149,14 +153,20 @@ Defined in `src/types.ts` and imported by every route file and `src/index.ts`. P
 
 ## 6. Tech Stack
 
-| Dependency             | Where           | Role                                                          |
-| ---------------------- | --------------- | ------------------------------------------------------------- |
-| `hono ^4.12.32`        | dependencies    | Web framework — routing, middleware, runtime-agnostic         |
-| `wrangler ^4.110.0`    | devDependencies | Workers runtime, dev server, deploy, typegen, secrets         |
-| `oxlint ^1.76.0`       | devDependencies | Linter — typescript/unicorn/oxc plugins                       |
-| `oxfmt ^0.61.0`        | devDependencies | Formatter — no semicolons, single quotes, trailing comma none |
-| `@types/node ^24.13.3` | devDependencies | Node.js type definitions for `nodejs_compat`                  |
-| TypeScript             | dev tool        | Strict mode, ESNext target, Bundler module resolution         |
+| Dependency                             | Where           | Role                                                          |
+| -------------------------------------- | --------------- | ------------------------------------------------------------- |
+| `hono ^4.12.32`                        | dependencies    | Web framework — routing, middleware, runtime-agnostic         |
+| `zod ^4.4.3`                           | dependencies    | Env var validation — single source of truth for `Bindings`    |
+| `wrangler ^4.110.0`                    | devDependencies | Workers runtime, dev server, deploy, typegen, secrets         |
+| `vitest ^4.1.10`                       | devDependencies | Test runner (globals), colocated `*.test.ts` files            |
+| `@cloudflare/vitest-pool-workers`      | devDependencies | Workers runtime pool for vitest                               |
+| `@vitest/coverage-istanbul`            | devDependencies | Coverage provider (`pnpm run test:coverage`)                  |
+| `oxlint ^1.76.0`                       | devDependencies | Linter — typescript/unicorn/oxc plugins                       |
+| `oxfmt ^0.61.0`                        | devDependencies | Formatter — no semicolons, single quotes, trailing comma none |
+| `@types/node ^24.13.3`                 | devDependencies | Node.js type definitions for `nodejs_compat`                  |
+| `semantic-release` + plugins           | devDependencies | Automated versioning, changelog, GitHub releases              |
+| `commitlint` / `husky` / `lint-staged` | devDependencies | Conventional-commit enforcement via git hooks                 |
+| TypeScript                             | dev tool        | Strict mode, ESNext target, Bundler module resolution         |
 
 `pnpm-workspace.yaml` allows builds for `esbuild` and `workerd` — required by wrangler's internal dependencies.
 
@@ -174,7 +184,7 @@ Defined in `src/types.ts` and imported by every route file and `src/index.ts`. P
 ### Adding Global Middleware
 
 1. Create `src/middleware/<name>.ts`
-2. Implement `(c: Context, next: Next) => Promise<Response | void>`
+2. Implement `(c: Context<AppInstance>, next: Next) => Promise<Response | void>` — type middleware with `Context<AppInstance>` so `c.env` bindings are typed
 3. Add re-export line to `src/middleware/index.ts`
 4. Register in `src/index.ts` **before** `app.onError(errorHandler)` to be covered by error handling
 5. Register after `onError` only if the middleware should bypass error wrapping
@@ -209,9 +219,10 @@ After adding or changing bindings (KV, R2, D1, etc.), run `pnpm run cf-typegen` 
 
 ### CORS Origin Whitelist
 
-- Always allows localhost (any protocol/port) for local development
-- Allows origins matching `ALLOWED_ORIGIN` — a comma-separated list supporting `*` wildcards (e.g., `https://app.example.com,https://*.example.com`)
-- Falls back to the first entry in `ALLOWED_ORIGIN` when the request origin does not match; if `ALLOWED_ORIGIN` is empty, returns no CORS header (denies the request)
+- Deny-by-default: origins that do not match return no `Access-Control-Allow-Origin` header (request is blocked client-side)
+- Allows localhost / 127.0.0.1 (any protocol/port) **only when `ENVIRONMENT=development`**
+- Allows origins matching `ALLOWED_ORIGIN` — a comma-separated list supporting `*` wildcard suffixes (e.g., `https://app.example.com,https://*.example.com`)
+- Bare `*` in `ALLOWED_ORIGIN` is rejected at env validation (fail-fast at cold start)
 - Preflight (`OPTIONS`) responses cached for 86400 seconds (24 hours)
 - `ALLOWED_ORIGIN` defaults to empty — configure it in production or use `wrangler secret put`
 
@@ -220,10 +231,12 @@ After adding or changing bindings (KV, R2, D1, etc.), run `pnpm run cf-typegen` 
 - `head_sampling_rate: 1` traces 100% of requests. Consider lowering to `0.1` (10%) in high-traffic production to avoid billing surprises.
 - Traces are visible in the Cloudflare Dashboard under Workers & Pages → your worker → Logs.
 
-### Testing Gap
+### Testing
 
-- No test runner is configured. `vitest/globals` appears in `tsconfig.json` types but vitest itself is not in dependencies.
-- When adding tests, use vitest with wrangler's `SELF` binding for integration tests against the deployed worker.
+- Vitest is configured with `vitest/globals`; tests are colocated as `*.test.ts` next to their sources and run via `pnpm run test`
+- Suites cover middleware (logger, CORS, error handler), shared utilities (IP), routes (health), env schema, and app-level integration (`src/index.test.ts`)
+- `pnpm run test:watch` for watch mode, `pnpm run test:coverage` for the Istanbul coverage report
+- CI enforces `typecheck` → `lint` → `test` → `build` before release
 - See `AGENTS.md` for code conventions, commands, and middleware registration rules.
 
 ## 9. Runtime Portability

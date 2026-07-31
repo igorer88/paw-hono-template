@@ -17,7 +17,7 @@ import { randomUUID } from 'node:crypto'
 // external packages
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
+import { secureHeaders } from 'hono/secure-headers'
 
 // internal — absolute (@/) before relative
 import { customCors, errorHandler, notFoundHandler } from '@/middleware'
@@ -99,14 +99,14 @@ helper_a() → helper_b() → buildThing() → handler() → export
 
 ## Naming Conventions
 
-| Kind | Convention | Example |
-|---|---|---|
-| Variables, functions, parameters | camelCase | `formatResponse`, `userId` |
-| Types, interfaces, generics | PascalCase | `AppInstance`, `HealthResponse` |
-| Files | kebab-case | `health.ts`, `error-handler.ts` |
-| Exported routers | domain + `Router` suffix | `healthRouter`, `ordersRouter` |
-| Exported handlers | verb/domain prefix | `errorHandler`, `notFoundHandler` |
-| Middleware functions | domain prefix | `customCors` |
+| Kind                             | Convention               | Example                           |
+| -------------------------------- | ------------------------ | --------------------------------- |
+| Variables, functions, parameters | camelCase                | `formatResponse`, `userId`        |
+| Types, interfaces, generics      | PascalCase               | `AppInstance`, `HealthResponse`   |
+| Files                            | kebab-case               | `health.ts`, `error-handler.ts`   |
+| Exported routers                 | domain + `Router` suffix | `healthRouter`, `ordersRouter`    |
+| Exported handlers                | verb/domain prefix       | `errorHandler`, `notFoundHandler` |
+| Middleware functions             | domain prefix            | `customCors`                      |
 
 ## Response Shape
 
@@ -126,19 +126,19 @@ All handlers return `c.json()` with this shape:
 
 ## Status Codes
 
-| Code | Usage |
-|---|---|
-| `200` | OK — successful response |
-| `201` | Created — resource created |
-| `204` | No Content — success, no body |
-| `400` | Bad Request — invalid input or missing parameters |
-| `401` | Unauthorized — authentication required or failed |
-| `403` | Forbidden — authenticated but not permitted |
-| `404` | Not Found — route or resource does not exist |
-| `409` | Conflict — duplicate entry or state conflict |
+| Code  | Usage                                              |
+| ----- | -------------------------------------------------- |
+| `200` | OK — successful response                           |
+| `201` | Created — resource created                         |
+| `204` | No Content — success, no body                      |
+| `400` | Bad Request — invalid input or missing parameters  |
+| `401` | Unauthorized — authentication required or failed   |
+| `403` | Forbidden — authenticated but not permitted        |
+| `404` | Not Found — route or resource does not exist       |
+| `409` | Conflict — duplicate entry or state conflict       |
 | `422` | Unprocessable Entity — semantic validation failure |
-| `429` | Too Many Requests — rate limited |
-| `500` | Internal Server Error — unhandled exception |
+| `429` | Too Many Requests — rate limited                   |
+| `500` | Internal Server Error — unhandled exception        |
 
 ## Error Handling
 
@@ -146,6 +146,7 @@ All handlers return `c.json()` with this shape:
 - Route handlers should not catch errors for logging — the global `onError` handler does that
 - Use `try/catch` in a handler only when you need to recover, transform, or suppress a specific error
 - Stack traces are automatically stripped in production (`ENVIRONMENT !== 'development'`) by `src/middleware/error.ts`
+- 5xx responses always use the generic message `Internal Server Error` (internal details are never exposed); 4xx responses keep the original error message
 
 ## No `any`
 
@@ -178,6 +179,7 @@ function getClient() {
 Required only for shared utility functions in `src/shared/` with non-obvious contracts. Use `/** */` style.
 
 Not required for:
+
 - Route handlers (the path and HTTP method define the contract)
 - Middleware functions
 - Functions with obvious signatures
@@ -186,9 +188,9 @@ Not required for:
 ```typescript
 /**
  * Converts an IP address to an anonymized string.
- * IPv4: preserves first two octets (192.168.x.x).
- * IPv6: truncates after 20 characters.
- * Returns "unknown" for falsy or unrecognized input.
+ * IPv4: masks the last octet (192.168.1.xxx).
+ * IPv6: masks the last group (2001:db8::xxxx).
+ * Non-IP strings are returned unchanged.
  */
 export const anonymizeIp = (ip: string): string => { ... }
 ```
@@ -197,14 +199,14 @@ export const anonymizeIp = (ip: string): string => { ... }
 
 See `.oxfmtrc.json` and `.oxlintrc.json` for the authoritative rules.
 
-| Rule | Value |
-|---|---|
-| Semicolons | none |
-| Quotes | single |
-| Trailing commas | none |
-| Arrow parens | avoid on single param (`x => x` not `(x) => x`) |
-| Indent | 2 spaces |
-| End of line | LF |
-| Trailing newline | required |
-| `no-explicit-any` | error |
-| `no-unused-vars` | warn |
+| Rule              | Value                                           |
+| ----------------- | ----------------------------------------------- |
+| Semicolons        | none                                            |
+| Quotes            | single                                          |
+| Trailing commas   | none                                            |
+| Arrow parens      | avoid on single param (`x => x` not `(x) => x`) |
+| Indent            | 2 spaces                                        |
+| End of line       | LF                                              |
+| Trailing newline  | required                                        |
+| `no-explicit-any` | error                                           |
+| `no-unused-vars`  | warn                                            |
