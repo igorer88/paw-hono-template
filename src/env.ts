@@ -16,12 +16,26 @@ export const IpLogLevel = {
 
 export type IpLogLevel = (typeof IpLogLevel)[keyof typeof IpLogLevel]
 
-export const envSchema = z.object({
-  ENVIRONMENT: z.enum(['production', 'staging', 'development']).default('development'),
-  ALLOWED_ORIGIN: z.string().default(''),
-  LOGGER_LEVELS: z.enum(['none', 'info', 'debug']).default('info'),
-  IP_LOG_LEVEL: z.enum(['none', 'full', 'partial']).default('partial')
-})
+export const envSchema = z
+  .object({
+    ENVIRONMENT: z.enum(['production', 'staging', 'development']).default('development'),
+    ALLOWED_ORIGIN: z.string().default(''),
+    LOGGER_LEVELS: z.enum(['none', 'info', 'debug']).default('info'),
+    IP_LOG_LEVEL: z.enum(['none', 'full', 'partial']).default('partial')
+  })
+  .passthrough()
+  .superRefine((val, ctx) => {
+    const origins = val.ALLOWED_ORIGIN.split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+    if (origins.some(origin => origin === '*')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ALLOWED_ORIGIN'],
+        message: 'Bare "*" is not allowed; use explicit origins only'
+      })
+    }
+  })
 
 export type ValidatedBindings = z.infer<typeof envSchema>
 

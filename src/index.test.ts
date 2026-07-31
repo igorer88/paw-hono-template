@@ -45,6 +45,15 @@ describe('App integration', () => {
     expect(res.headers.get('X-XSS-Protection')).toBe('0')
   })
 
+  it('sets Content Security Policy header', async () => {
+    const res = await worker.fetch(new Request('http://localhost/'), bindings, ctx)
+
+    const csp = res.headers.get('Content-Security-Policy')
+    expect(csp).toBeDefined()
+    expect(csp).toContain("default-src 'self'")
+    expect(csp).toContain("object-src 'none'")
+  })
+
   it('does not set CORS header when no origin is present', async () => {
     const res = await worker.fetch(new Request('http://localhost/'), bindings, ctx)
 

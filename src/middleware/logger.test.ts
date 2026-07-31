@@ -70,6 +70,52 @@ describe('customLogger', () => {
     expect(all.some(l => l === '  Query:')).toBe(true)
   })
 
+  it('redacts sensitive headers in debug mode', async () => {
+    const { app, bindings } = createApp({
+      loggerLevel: LoggerLevel.DEBUG,
+      ipLogLevel: IpLogLevel.NONE
+    })
+    await app.request(
+      '/test',
+      {
+        headers: {
+          Authorization: 'Bearer secret-token',
+          Cookie: 'session=abc123',
+          'X-API-Key': 'api-key-123'
+        }
+      },
+      bindings
+    )
+
+    const all = consoleSpy.mock.calls.map(c => JSON.stringify(c))
+    expect(all.some(l => l.includes('secret-token'))).toBe(false)
+    expect(all.some(l => l.includes('abc123'))).toBe(false)
+    expect(all.some(l => l.includes('api-key-123'))).toBe(false)
+  })
+
+  it('redacts query values in debug mode', async () => {
+    const { app, bindings } = createApp({
+      loggerLevel: LoggerLevel.DEBUG,
+      ipLogLevel: IpLogLevel.NONE
+    })
+    await app.request('/search?token=supersecret&user=alice', {}, bindings)
+
+    const all = consoleSpy.mock.calls.map(c => JSON.stringify(c))
+    expect(all.some(l => l.includes('supersecret'))).toBe(false)
+    expect(all.some(l => l.includes('alice'))).toBe(false)
+  })
+
+  it('logs non-sensitive header values in debug mode', async () => {
+    const { app, bindings } = createApp({
+      loggerLevel: LoggerLevel.DEBUG,
+      ipLogLevel: IpLogLevel.NONE
+    })
+    await app.request('/test', { headers: { 'x-custom': 'val' } }, bindings)
+
+    const all = consoleSpy.mock.calls.map(c => JSON.stringify(c))
+    expect(all.some(l => l.includes('val'))).toBe(true)
+  })
+
   it('defaults to info when level is missing', async () => {
     const app = new Hono<AppInstance>()
     app.use('*', customLogger)

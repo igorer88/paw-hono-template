@@ -6,6 +6,8 @@ const globToRegex = (pattern: string): RegExp => {
   return new RegExp(`^${escaped.replace(/\*/g, '.*')}$`)
 }
 
+const DEV_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
+
 export const customCors = async (c: Context, next: Next) => {
   const raw = c.env.ALLOWED_ORIGIN || ''
   const allowedOrigins = raw
@@ -18,7 +20,8 @@ export const customCors = async (c: Context, next: Next) => {
       if (!origin) return origin
 
       try {
-        if (new URL(origin).hostname === 'localhost') return origin
+        const hostname = new URL(origin).hostname
+        if (c.env.ENVIRONMENT === 'development' && DEV_HOSTNAMES.has(hostname)) return origin
       } catch {
         return null
       }
@@ -28,9 +31,7 @@ export const customCors = async (c: Context, next: Next) => {
         return origin === allowed
       })
 
-      if (matched) return origin
-
-      return allowedOrigins[0] || null
+      return matched ? origin : null
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
