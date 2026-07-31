@@ -1,6 +1,7 @@
 import type { Context, Next } from 'hono'
 import { LoggerLevel, IpLogLevel } from '@/env'
 import { getClientIp, anonymizeIp } from '@/shared/ip'
+import type { AppInstance } from '@/types'
 
 const REDACTED = '[REDACTED]'
 
@@ -12,7 +13,7 @@ const SENSITIVE_HEADERS = new Set([
   'cf-connecting-ip'
 ])
 
-export const customLogger = async (c: Context, next: Next) => {
+export const customLogger = async (c: Context<AppInstance>, next: Next) => {
   if (c.env.LOGGER_LEVELS === LoggerLevel.NONE) return next()
 
   const method = c.req.method
@@ -27,7 +28,7 @@ export const customLogger = async (c: Context, next: Next) => {
   if (!skip) console.log(`--> ${method} ${path} ${c.res.status} ${Date.now() - start}ms`)
 
   if (c.env.IP_LOG_LEVEL !== IpLogLevel.NONE) {
-    const ip = getClientIp(c)
+    const ip = getClientIp(c.req.raw.headers)
     if (ip) {
       const display = c.env.IP_LOG_LEVEL === IpLogLevel.PARTIAL ? anonymizeIp(ip) : ip
       console.log('  IP:', display)

@@ -32,7 +32,7 @@ export default {
     'scope-empty': [2, 'never'],
     'scope-enum': [2, 'always', [
       'app', 'middleware', 'routes', 'shared',
-      'auth', 'docs', 'infra', 'root',
+      'auth', 'docs', 'infra', 'root', 'global',
     ]],
     'subject-empty': [2, 'never'],
     'subject-case': [2, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],

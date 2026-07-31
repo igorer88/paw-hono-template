@@ -34,7 +34,7 @@ describe('App integration', () => {
     const res = await worker.fetch(new Request('http://localhost/health'), bindings, ctx)
     expect(res.status).toBe(200)
 
-    const body = await res.json()
+    const body = (await res.json()) as { success: boolean }
     expect(body.success).toBe(true)
   })
 

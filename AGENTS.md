@@ -93,7 +93,7 @@ Examples:
 - `refactor(routes): extract user validation logic`
 - `docs(docs): add architecture blueprint`
 
-Scopes describe the changed area: `(app)`, `(middleware)`, `(routes)`, `(shared)`, `(auth)`, `(docs)`, `(infra)`, `(root)`, etc.
+Scopes describe the changed area: `(app)`, `(middleware)`, `(routes)`, `(shared)`, `(auth)`, `(docs)`, `(infra)`, `(root)`, `(global)` (cross-cutting changes spanning several areas), etc.
 
 This format follows the [Conventional Commits](https://www.conventionalcommits.org/) specification, enabling automated versioning and changelog generation via semantic-release.
 
@@ -163,8 +163,9 @@ pnpm install          # install deps (respects engine-strict)
 pnpm run dev          # wrangler dev — local server on localhost:8787, hot reload
 pnpm run deploy       # wrangler deploy --minify (uses production env from wrangler.jsonc)
 pnpm run cf-typegen   # wrangler types --env-interface CloudflareBindings (regenerates worker-configuration.d.ts)
-pnpm run lint         # oxlint — no --fix in this script (binary supports --fix)
+pnpm run typecheck    # tsc --noEmit — full TypeScript type check
 pnpm run format       # oxfmt --write — rewrites files in place
+pnpm run lint         # oxlint — no --fix in this script (binary supports --fix)
 pnpm run test         # vitest run — runs all tests
 pnpm run test:watch   # vitest — watch mode
 pnpm run test:coverage # vitest run --coverage — with v8 coverage

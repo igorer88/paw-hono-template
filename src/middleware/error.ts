@@ -1,9 +1,12 @@
 import type { Context } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import type { AppInstance } from '@/types'
 
-export const errorHandler = (err: Error, c: Context) => {
+export const errorHandler = (err: Error, c: Context<AppInstance>) => {
   console.error(`[Worker Error]: ${err.message}`, err.stack)
 
-  const status: number = c.res.status === 200 || !c.res.status ? 500 : c.res.status
+  const status: ContentfulStatusCode =
+    c.res.status === 200 || !c.res.status ? 500 : (c.res.status as ContentfulStatusCode)
   const isServerError = status >= 500
 
   return c.json(
@@ -20,7 +23,7 @@ export const errorHandler = (err: Error, c: Context) => {
   )
 }
 
-export const notFoundHandler = (c: Context) => {
+export const notFoundHandler = (c: Context<AppInstance>) => {
   return c.json(
     {
       success: false,

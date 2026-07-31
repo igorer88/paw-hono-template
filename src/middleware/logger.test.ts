@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { customLogger } from './logger'
 import { LoggerLevel, IpLogLevel } from '@/env'
 import type { AppInstance } from '@/types'
+import type { MockInstance } from 'vitest'
 
 const baseBindings = {
   ENVIRONMENT: 'development' as const,
@@ -26,7 +27,7 @@ const createApp = (opts: { loggerLevel: string; ipLogLevel: string }) => {
 const ipHeader = { 'cf-connecting-ip': '203.0.113.1' }
 
 describe('customLogger', () => {
-  let consoleSpy: ReturnType<typeof vi.spyOn>
+  let consoleSpy: MockInstance<(...args: string[]) => void>
 
   beforeEach(() => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
