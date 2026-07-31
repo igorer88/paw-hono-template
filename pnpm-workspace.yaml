@@ -3,3 +3,10 @@ minimumReleaseAge: 1440 # 24 hours
 allowBuilds:
   esbuild: true
   workerd: true
+
+# Force a single conventionalcommits version: v10 emits function-based writer
+# templates that are incompatible with conventional-changelog-writer@8 (used by
+# @semantic-release/release-notes-generator@14), which would render empty notes.
+# v9 emits string templates compatible with writer@8.
+overrides:
+  conventional-changelog-conventionalcommits: 9.3.1
