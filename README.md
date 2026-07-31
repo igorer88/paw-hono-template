@@ -24,8 +24,8 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 
 ## Roadmap
 
-- Testing (vitest)
-- Request validation (zod)
+- Request validation beyond env vars (zod) — e.g., payload schemas for route handlers
+- CI tests on pull requests
 
 ## Project setup
 
@@ -39,25 +39,15 @@ Environment variables are split by sensitivity:
 
 **Non-secret vars** — configured in `wrangler.jsonc` under `vars` (checked into version control):
 
-| Variable         | Type                            | Description                                                                                                                                            |
-| ---------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ALLOWED_ORIGIN` | string                          | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Localhost is always allowed.           |
-| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds headers and query params. |
-| `IP_LOG_LEVEL`   | `'none' \| 'full' \| 'partial'` | Client IP logging. `none` omits IP, `full` logs the raw IP, `partial` masks the last octet/group (default).                                            |
+| Variable         | Type                            | Description                                                                                                                                                                                   |
+| ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGIN` | string                          | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Bare `*` is rejected. Localhost/127.0.0.1 bypass applies only in development. |
+| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds redacted headers and query keys.                                 |
+| `IP_LOG_LEVEL`   | `'none' \| 'full' \| 'partial'` | Client IP logging. `none` omits IP, `full` logs the raw IP, `partial` masks the last octet/group (default).                                                                                   |
 
-**Secrets** — set via `.dev.vars` for local dev, `wrangler secret put <NAME>` for production (never committed):
+**Secrets** — set via `.dev.vars` for local dev, `wrangler secret put <NAME>` for production (never committed).
 
-| Variable         | Type   | Description                       |
-| ---------------- | ------ | --------------------------------- |
-| `API_SECRET_KEY` | string | Secret key for API authentication |
-
-Create `.dev.vars` from the example:
-
-```bash
-cp .env.example .dev.vars
-```
-
-Then replace `change-me` with your actual secret.
+No secrets are required by default. `.env.example` documents this — if auth middleware is added later, add secrets to `.dev.vars` (local) and `wrangler secret put` (production).
 
 Production overrides for vars are set in `wrangler.jsonc` under `env.production.vars`.
 
@@ -96,15 +86,18 @@ Response:
 
 ```
 src/
-├── index.ts              # App entrypoint — mounts middleware + routes
+├── index.ts              # App entrypoint — mounts middleware + routes, validates env
+├── env.ts                # Zod schema + env validation (single source of truth for vars)
 ├── types.ts              # Bindings, Variables, AppInstance types
 ├── middleware/
 │   ├── index.ts          # Barrel — re-exports all middleware
 │   ├── error.ts          # Error handler + 404 handler
+│   ├── logger.ts         # Request logging (levels + IP + redaction)
 │   └── security.ts       # Custom CORS middleware
 ├── routes/
 │   └── health.ts         # GET /health endpoint
 └── shared/
+    ├── ip.ts             # Client IP extraction + anonymization
     └── utils.ts          # Pure utility functions
 docs/
 ├── architecture.md       # Design intent, request lifecycle, extensibility
@@ -127,20 +120,26 @@ All responses follow a consistent envelope:
 }
 ```
 
-- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message } }` with the preserved status code (500 if unset)
+- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message } }` with the preserved status code (500 if unset). 5xx responses use the generic message `Internal Server Error`; 4xx keep the original error message
 - Unmatched routes return `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: GET /path" } }` with 404
-- Stack traces are never exposed in production
+- Stack traces are never exposed in production (development only)
 
-## Linting and Formatting
+## Linting, Formatting, and Type Checking
 
 ```bash
-pnpm run lint
+pnpm run typecheck
 pnpm run format
+pnpm run lint
 ```
 
 ## Tests
 
-No test runner is configured yet. `vitest/globals` is referenced in `tsconfig.json` types but vitest is not installed. Testing setup is on the roadmap.
+Vitest is configured with `vitest/globals`. Tests are colocated as `*.test.ts` next to their sources and run with:
+
+```bash
+pnpm run test        # single run
+pnpm run test:watch  # watch mode
+```
 
 ## Deployment Discussion
 
@@ -169,7 +168,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 - `feat` → minor, `fix`/`perf` → patch, `type!:` or `BREAKING CHANGE` footer → major
 - `chore`, `test`, `style`, `refactor`, `docs` do not trigger a release
 
-On every push to `main` or `release/*`, the CI pipeline runs lint → test → build → semantic-release, which bumps `package.json`, generates `CHANGELOG.md`, creates a git tag, and publishes a GitHub Release with build artifacts attached.
+On every push to `main` or `release/*`, the CI pipeline runs typecheck → lint → test → build → semantic-release, which bumps `package.json`, generates `CHANGELOG.md`, creates a git tag, and publishes a GitHub Release with build artifacts attached.
 
 ### Portability
 
