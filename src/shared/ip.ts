@@ -1,9 +1,7 @@
-import type { Context } from 'hono'
-
-export const getClientIp = (c: Context): string | null =>
-  c.req.header('cf-connecting-ip') ??
-  c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
-  c.req.header('x-real-ip') ??
+export const getClientIp = (headers: Headers): string | null =>
+  headers.get('cf-connecting-ip') ??
+  headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+  headers.get('x-real-ip') ??
   null
 
 export const anonymizeIp = (ip: string): string => {

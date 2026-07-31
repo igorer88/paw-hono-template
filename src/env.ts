@@ -16,12 +16,15 @@ export const IpLogLevel = {
 
 export type IpLogLevel = (typeof IpLogLevel)[keyof typeof IpLogLevel]
 
+const loggerLevelValues = Object.values(LoggerLevel) as [LoggerLevel, ...LoggerLevel[]]
+const ipLogLevelValues = Object.values(IpLogLevel) as [IpLogLevel, ...IpLogLevel[]]
+
 export const envSchema = z
   .object({
     ENVIRONMENT: z.enum(['production', 'staging', 'development']).default('development'),
     ALLOWED_ORIGIN: z.string().default(''),
-    LOGGER_LEVELS: z.enum(['none', 'info', 'debug']).default('info'),
-    IP_LOG_LEVEL: z.enum(['none', 'full', 'partial']).default('partial')
+    LOGGER_LEVELS: z.enum(loggerLevelValues).default(LoggerLevel.INFO),
+    IP_LOG_LEVEL: z.enum(ipLogLevelValues).default(IpLogLevel.PARTIAL)
   })
   .passthrough()
   .superRefine((val, ctx) => {

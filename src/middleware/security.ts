@@ -1,5 +1,6 @@
 import { cors } from 'hono/cors'
 import type { Context, Next } from 'hono'
+import type { AppInstance } from '@/types'
 
 const globToRegex = (pattern: string): RegExp => {
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -8,7 +9,7 @@ const globToRegex = (pattern: string): RegExp => {
 
 const DEV_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
 
-export const customCors = async (c: Context, next: Next) => {
+export const customCors = async (c: Context<AppInstance>, next: Next) => {
   const raw = c.env.ALLOWED_ORIGIN || ''
   const allowedOrigins = raw
     .split(',')

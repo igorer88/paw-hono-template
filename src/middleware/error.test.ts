@@ -2,6 +2,17 @@ import { Hono } from 'hono'
 import { errorHandler, notFoundHandler } from './error'
 import type { AppInstance } from '@/types'
 
+type ErrorBody = {
+  success: boolean
+  description: string
+  error: {
+    message: string
+    stack?: string
+  }
+}
+
+const asErrorBody = (body: unknown): ErrorBody => body as ErrorBody
+
 const bindings = {
   ENVIRONMENT: 'development' as const,
   ALLOWED_ORIGIN: 'https://app.example.com'
@@ -49,7 +60,7 @@ describe('errorHandler', () => {
     })
 
     const res = await app.request('/error', {}, bindings)
-    const body = await res.json()
+    const body = asErrorBody(await res.json())
     expect(body.error.message).toBe('bad request')
   })
 
@@ -61,7 +72,7 @@ describe('errorHandler', () => {
     app.onError(errorHandler)
 
     const res = await app.request('/error', {}, bindings)
-    const body = await res.json()
+    const body = asErrorBody(await res.json())
     expect(res.status).toBe(500)
     expect(body.error.message).toBe('Internal Server Error')
   })
@@ -74,7 +85,7 @@ describe('errorHandler', () => {
     app.onError(errorHandler)
 
     const res = await app.request('/error', {}, bindings)
-    const body = await res.json()
+    const body = asErrorBody(await res.json())
     expect(body.error.stack).toBeDefined()
     expect(body.error.stack).toContain('Error: dev error')
   })
@@ -87,7 +98,7 @@ describe('errorHandler', () => {
     app.onError(errorHandler)
 
     const res = await app.request('/error', {}, productionBindings)
-    const body = await res.json()
+    const body = asErrorBody(await res.json())
     expect(body.error.stack).toBeUndefined()
   })
 
@@ -99,7 +110,7 @@ describe('errorHandler', () => {
     app.onError(errorHandler)
 
     const res = await app.request('/error', {}, bindings)
-    const body = await res.json()
+    const body = asErrorBody(await res.json())
     expect(body).toMatchObject({
       success: false,
       description: 'Something went wrong',
@@ -116,7 +127,7 @@ describe('notFoundHandler', () => {
     const res = await app.request('/unknown', {}, bindings)
     expect(res.status).toBe(404)
 
-    const body = await res.json()
+    const body = asErrorBody(await res.json())
     expect(body).toMatchObject({
       success: false,
       description: 'Verify the URL and HTTP method',
