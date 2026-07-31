@@ -18,7 +18,15 @@ export default {
       ]
     }],
     ['@semantic-release/release-notes-generator', {
-      preset: 'conventionalcommits'
+      preset: 'conventionalcommits',
+      presetConfig: {
+        types: [
+          { type: 'feat', section: '🚀 Features' },
+          { type: 'fix', section: '🐛 Bug Fixes' },
+          { type: 'perf', section: '⚡️ Performance Improvements' },
+          { type: 'revert', section: '⏪️ Reverts' }
+        ]
+      }
     }],
     ['@semantic-release/changelog', {
       changelogFile: 'CHANGELOG.md'
