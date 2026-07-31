@@ -53,6 +53,26 @@ describe('envSchema', () => {
   it('fails when IP_LOG_LEVEL is invalid', () => {
     expect(() => envSchema.parse({ IP_LOG_LEVEL: 'enabled' })).toThrow()
   })
+
+  it('preserves unknown bindings via passthrough', () => {
+    const result = envSchema.parse({
+      ENVIRONMENT: 'production',
+      MY_KV: { value: 1 }
+    })
+    expect(result.MY_KV).toEqual({ value: 1 })
+  })
+
+  it('rejects bare * in ALLOWED_ORIGIN', () => {
+    expect(() => envSchema.parse({ ALLOWED_ORIGIN: '*' })).toThrow('explicit origins only')
+    expect(() => envSchema.parse({ ALLOWED_ORIGIN: 'https://a.com,*' })).toThrow(
+      'explicit origins only'
+    )
+  })
+
+  it('accepts wildcard suffixes in ALLOWED_ORIGIN', () => {
+    const result = envSchema.parse({ ALLOWED_ORIGIN: 'https://*.example.com' })
+    expect(result.ALLOWED_ORIGIN).toBe('https://*.example.com')
+  })
 })
 
 describe('validateEnv', () => {

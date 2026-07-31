@@ -38,6 +38,34 @@ describe('errorHandler', () => {
     expect(res.status).toBe(400)
   })
 
+  it('keeps original message for client errors (4xx)', async () => {
+    const app = new Hono<AppInstance>()
+    app.get('/error', () => {
+      throw new Error('bad request')
+    })
+    app.onError((err, c) => {
+      c.res = new Response(null, { status: 400 })
+      return errorHandler(err, c)
+    })
+
+    const res = await app.request('/error', {}, bindings)
+    const body = await res.json()
+    expect(body.error.message).toBe('bad request')
+  })
+
+  it('masks message for server errors (5xx)', async () => {
+    const app = new Hono<AppInstance>()
+    app.get('/error', () => {
+      throw new Error('database connection leaked')
+    })
+    app.onError(errorHandler)
+
+    const res = await app.request('/error', {}, bindings)
+    const body = await res.json()
+    expect(res.status).toBe(500)
+    expect(body.error.message).toBe('Internal Server Error')
+  })
+
   it('includes stack trace in development', async () => {
     const app = new Hono<AppInstance>()
     app.get('/error', () => {
@@ -75,7 +103,7 @@ describe('errorHandler', () => {
     expect(body).toMatchObject({
       success: false,
       description: 'Something went wrong',
-      error: { message: 'shape test' }
+      error: { message: 'Internal Server Error' }
     })
   })
 })

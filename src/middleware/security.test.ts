@@ -12,6 +12,11 @@ const noAllowedBindings = {
   ALLOWED_ORIGIN: ''
 }
 
+const productionBindings = {
+  ENVIRONMENT: 'production' as const,
+  ALLOWED_ORIGIN: 'https://app.example.com'
+}
+
 describe('customCors', () => {
   let app: Hono<AppInstance>
 
@@ -81,7 +86,7 @@ describe('customCors', () => {
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://api.example.com')
   })
 
-  it('returns fallback for unknown origins', async () => {
+  it('denies unknown origins instead of falling back', async () => {
     const res = await app.request(
       '/test',
       {
@@ -90,7 +95,43 @@ describe('customCors', () => {
       bindings
     )
 
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()
+  })
+
+  it('denies localhost origins in production', async () => {
+    const res = await app.request(
+      '/test',
+      {
+        headers: { Origin: 'http://localhost:5173' }
+      },
+      productionBindings
+    )
+
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()
+  })
+
+  it('allows allowlisted origin in production', async () => {
+    const res = await app.request(
+      '/test',
+      {
+        headers: { Origin: 'https://app.example.com' }
+      },
+      productionBindings
+    )
+
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://app.example.com')
+  })
+
+  it('allows 127.0.0.1 origins in development', async () => {
+    const res = await app.request(
+      '/test',
+      {
+        headers: { Origin: 'http://127.0.0.1:5173' }
+      },
+      bindings
+    )
+
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://127.0.0.1:5173')
   })
 
   it('returns null for unknown origins when ALLOWED_ORIGIN is empty', async () => {
