@@ -1,3 +1,7 @@
+# Self-hosted runtime config used by the Dockerfile (workerd) — an alternative
+# to the default Cloudflare Workers deployment. This is a static config: bindings
+# are hardcoded below. Allowed origins is empty (CORS denies all) and ENVIRONMENT
+# is production — adjust per deployment before building the image.
 using Workerd = import "/workerd/workerd.capnp";
 
 const config :Workerd.Config = (
