@@ -169,7 +169,7 @@ pnpm run format       # oxfmt --write — rewrites files in place
 pnpm run lint         # oxlint — no --fix in this script (binary supports --fix)
 pnpm run test         # vitest run — runs all tests
 pnpm run test:watch   # vitest — watch mode
-pnpm run test:coverage # vitest run --coverage — with v8 coverage
+pnpm run test:coverage # vitest run --coverage — with Istanbul coverage
 pnpm run semantic-release # manual semantic-release dry-run (local) or full run (CI)
 ```
 

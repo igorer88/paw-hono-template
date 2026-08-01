@@ -25,7 +25,6 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 ## Roadmap
 
 - Request validation beyond env vars (zod) — e.g., payload schemas for route handlers
-- CI tests on pull requests
 
 ## Project setup
 
