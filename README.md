@@ -36,7 +36,7 @@ pnpm install
 
 Environment variables are split by sensitivity:
 
-**Non-secret vars** — configured in `wrangler.jsonc` under `vars` (checked into version control):
+**Non-secret vars** — configured in `wrangler.jsonc` per environment under `vars` (checked into version control):
 
 | Variable         | Type                            | Description                                                                                                                                                                                   |
 | ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -48,7 +48,7 @@ Environment variables are split by sensitivity:
 
 No secrets are required by default. `.env.example` documents this — if auth middleware is added later, add secrets to `.dev.vars` (local) and `wrangler secret put` (production).
 
-Production overrides for vars are set in `wrangler.jsonc` under `env.production.vars`.
+`ENVIRONMENT` is required (no default) and set explicitly per environment: `development` under `env.development.vars`, `production` under `env.production.vars`. Deploying without `--env` fails fast at cold start rather than silently running in development.
 
 ## Compile and run
 
@@ -119,7 +119,7 @@ All responses follow a consistent envelope:
 }
 ```
 
-- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message } }` with the preserved status code (500 if unset). 5xx responses use the generic message `Internal Server Error`; 4xx keep the original error message
+- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message } }` with the preserved status code (500 if unset). 5xx responses use the generic message `Internal Server Error`; 4xx surface a message to the client only when thrown via `HTTPException(status, { message })` — plain `Error.message` is never echoed
 - Unmatched routes return `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: GET /path" } }` with 404
 - Stack traces are never exposed in production (development only)
 

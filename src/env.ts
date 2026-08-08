@@ -21,7 +21,7 @@ const ipLogLevelValues = Object.values(IpLogLevel) as [IpLogLevel, ...IpLogLevel
 
 export const envSchema = z
   .object({
-    ENVIRONMENT: z.enum(['production', 'staging', 'development']).default('development'),
+    ENVIRONMENT: z.enum(['production', 'staging', 'development']),
     ALLOWED_ORIGIN: z.string().default(''),
     LOGGER_LEVELS: z.enum(loggerLevelValues).default(LoggerLevel.INFO),
     IP_LOG_LEVEL: z.enum(ipLogLevelValues).default(IpLogLevel.PARTIAL)

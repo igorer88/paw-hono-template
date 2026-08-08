@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
 import { errorHandler, notFoundHandler } from './error'
 import type { AppInstance } from '@/types'
 
@@ -49,10 +50,36 @@ describe('errorHandler', () => {
     expect(res.status).toBe(400)
   })
 
-  it('keeps original message for client errors (4xx)', async () => {
+  it('keeps original message for client errors (4xx) via HTTPException', async () => {
     const app = new Hono<AppInstance>()
     app.get('/error', () => {
-      throw new Error('bad request')
+      throw new HTTPException(400, { message: 'bad request' })
+    })
+    app.onError(errorHandler)
+
+    const res = await app.request('/error', {}, bindings)
+    const body = asErrorBody(await res.json())
+    expect(res.status).toBe(400)
+    expect(body.error.message).toBe('bad request')
+  })
+
+  it('propagates HTTPException status and message from a route', async () => {
+    const app = new Hono<AppInstance>()
+    app.get('/error', () => {
+      throw new HTTPException(404, { message: 'widget not found' })
+    })
+    app.onError(errorHandler)
+
+    const res = await app.request('/error', {}, bindings)
+    const body = asErrorBody(await res.json())
+    expect(res.status).toBe(404)
+    expect(body.error.message).toBe('widget not found')
+  })
+
+  it('genericizes message for plain errors with a client status', async () => {
+    const app = new Hono<AppInstance>()
+    app.get('/error', () => {
+      throw new Error('user foo@bar.com not found')
     })
     app.onError((err, c) => {
       c.res = new Response(null, { status: 400 })
@@ -61,7 +88,21 @@ describe('errorHandler', () => {
 
     const res = await app.request('/error', {}, bindings)
     const body = asErrorBody(await res.json())
-    expect(body.error.message).toBe('bad request')
+    expect(res.status).toBe(400)
+    expect(body.error.message).toBe('Internal Server Error')
+  })
+
+  it('genericizes message for HTTPException with a server status', async () => {
+    const app = new Hono<AppInstance>()
+    app.get('/error', () => {
+      throw new HTTPException(500, { message: 'database connection leaked' })
+    })
+    app.onError(errorHandler)
+
+    const res = await app.request('/error', {}, bindings)
+    const body = asErrorBody(await res.json())
+    expect(res.status).toBe(500)
+    expect(body.error.message).toBe('Internal Server Error')
   })
 
   it('masks message for server errors (5xx)', async () => {

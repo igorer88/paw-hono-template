@@ -146,7 +146,7 @@ All handlers return `c.json()` with this shape:
 - Route handlers should not catch errors for logging — the global `onError` handler does that
 - Use `try/catch` in a handler only when you need to recover, transform, or suppress a specific error
 - Stack traces are automatically stripped in production (`ENVIRONMENT !== 'development'`) by `src/middleware/error.ts`
-- 5xx responses always use the generic message `Internal Server Error` (internal details are never exposed); 4xx responses keep the original error message
+- 5xx responses always use the generic message `Internal Server Error` (internal details are never exposed). For client errors, surface a message to the client by throwing `HTTPException(status, { message })` — plain `Error.message` is never echoed to the client
 
 ## No `any`
 
