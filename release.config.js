@@ -1,47 +1,60 @@
 export default {
-  branches: [
-    'main',
-    { name: 'release/*', prerelease: 'staging' }
-  ],
+  branches: ['main', { name: 'release/*', prerelease: 'staging' }],
   plugins: [
-    ['@semantic-release/commit-analyzer', {
-      preset: 'conventionalcommits',
-      releaseRules: [
-        { type: 'feat', release: 'minor' },
-        { type: 'fix', release: 'patch' },
-        { type: 'perf', release: 'patch' },
-        { type: 'docs', release: false },
-        { type: 'chore', release: false },
-        { type: 'test', release: false },
-        { type: 'style', release: false },
-        { type: 'refactor', release: false }
-      ]
-    }],
-    ['@semantic-release/release-notes-generator', {
-      preset: 'conventionalcommits',
-      presetConfig: {
-        types: [
-          { type: 'feat', section: '🚀 Features' },
-          { type: 'fix', section: '🐛 Bug Fixes' },
-          { type: 'perf', section: '⚡️ Performance Improvements' },
-          { type: 'revert', section: '⏪️ Reverts' }
+    [
+      '@semantic-release/commit-analyzer',
+      {
+        preset: 'conventionalcommits',
+        releaseRules: [
+          { type: 'feat', release: 'minor' },
+          { type: 'fix', release: 'patch' },
+          { type: 'perf', release: 'patch' },
+          { type: 'docs', release: false },
+          { type: 'chore', release: false },
+          { type: 'test', release: false },
+          { type: 'style', release: false },
+          { type: 'refactor', release: false }
         ]
       }
-    }],
-    ['@semantic-release/changelog', {
-      changelogFile: 'CHANGELOG.md'
-    }],
-    ['@semantic-release/npm', {
-      npmPublish: false
-    }],
-    ['@semantic-release/git', {
-      assets: ['CHANGELOG.md', 'package.json'],
-      message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}'
-    }],
-    ['@semantic-release/github', {
-      assets: [
-        { path: 'dist/', label: 'Build artifacts (${nextRelease.version})' }
-      ]
-    }]
+    ],
+    [
+      '@semantic-release/release-notes-generator',
+      {
+        preset: 'conventionalcommits',
+        presetConfig: {
+          types: [
+            { type: 'feat', section: '🚀 Features' },
+            { type: 'fix', section: '🐛 Bug Fixes' },
+            { type: 'perf', section: '⚡️ Performance Improvements' },
+            { type: 'revert', section: '⏪️ Reverts' }
+          ]
+        }
+      }
+    ],
+    [
+      '@semantic-release/changelog',
+      {
+        changelogFile: 'CHANGELOG.md'
+      }
+    ],
+    [
+      '@semantic-release/npm',
+      {
+        npmPublish: false
+      }
+    ],
+    [
+      '@semantic-release/git',
+      {
+        assets: ['CHANGELOG.md', 'package.json'],
+        message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}'
+      }
+    ],
+    [
+      '@semantic-release/github',
+      {
+        assets: [{ path: 'dist/', label: 'Build artifacts (${nextRelease.version})' }]
+      }
+    ]
   ]
 }
