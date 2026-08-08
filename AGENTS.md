@@ -6,7 +6,7 @@ See `docs/architecture.md` for full design intent and `README.md` for install in
 
 - Scaffolding complete. Node >=24.x, pnpm >=11.x enforced via `.npmrc` `engine-strict=true`
 - Vitest configured (`vitest/globals` in tsconfig types); tests live colocated as `*.test.ts` next to sources and run via `pnpm run test`
-- Only one environment (`production`) defined in `wrangler.jsonc`, sets `ENVIRONMENT=production`
+- Two environments (`development`, `production`) defined in `wrangler.jsonc`, each setting `ENVIRONMENT` explicitly. `ENVIRONMENT` is required with no default — omitting `--env` fails at cold start.
 - CI, pre-commit hooks — husky + lint-staged + commitlint configured. See `Commit convention` below.
 
 ## Package boundaries
@@ -51,7 +51,7 @@ Key points:
 
 - Responses use `c.json()` with shape `{ success: boolean, description?: string, error?: { message: string, stack?: string }, data?: unknown }`
 - Stack traces only included when `ENVIRONMENT=development` (checked at runtime in `src/middleware/error.ts`)
-- 5xx responses always use the generic message `Internal Server Error`; 4xx keep the original error message
+- 5xx responses always use the generic message `Internal Server Error`; 4xx surface a message to the client only when thrown via `HTTPException(status, { message })` — plain `Error.message` is never echoed
 - 404 returns `{ success: false, error: { message: "Route not found: {method} {path}" } }`
 - Error handler preserves existing response status; falls back to 500 if status is 200 (unset)
 - CORS denies unmatched origins (no `Access-Control-Allow-Origin` header); localhost/127.0.0.1 bypass only when `ENVIRONMENT=development`; validates against comma-separated `ALLOWED_ORIGIN` with `*` wildcard support; bare `*` is rejected at env validation
@@ -153,7 +153,7 @@ The first thing in a real project: `git checkout -b develop && git push -u origi
 
 See `docs/architecture.md` §8 Operational Considerations — Env Var Management for the full details.
 
-Non-secret vars live in `wrangler.jsonc` under `vars`. Secrets live in `.dev.vars` (local) and `wrangler secret put` (production).
+Non-secret vars live in `wrangler.jsonc` under each env's `vars`. Secrets live in `.dev.vars` (local) and `wrangler secret put` (production). `ENVIRONMENT` is required (no default) and set explicitly per env (`development`/`production`) — a bare `wrangler deploy` without `--env` fails fast at cold start.
 
 Key additional rule: all env vars must be declared in `src/types.ts` under the `Bindings` type before use (the zod schema in `src/env.ts` is the single source of truth).
 
@@ -161,7 +161,7 @@ Key additional rule: all env vars must be declared in `src/types.ts` under the `
 
 ```bash
 pnpm install          # install deps (respects engine-strict)
-pnpm run dev          # wrangler dev — local server on localhost:8787, hot reload
+pnpm run dev          # wrangler dev --env development — local server on localhost:8787, hot reload
 pnpm run deploy       # wrangler deploy --env production --minify (uses production env from wrangler.jsonc)
 pnpm run cf-typegen   # wrangler types --env-interface CloudflareBindings (regenerates worker-configuration.d.ts)
 pnpm run typecheck    # tsc --noEmit — full TypeScript type check

@@ -3,23 +3,26 @@
   "name": "paw-hono-template",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-28",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
   },
-  "vars": {
-    "ENVIRONMENT": "development",
-    "ALLOWED_ORIGIN": "",
-    "LOGGER_LEVELS": "info",
-    "IP_LOG_LEVEL": "partial"
-  },
   "env": {
+    "development": {
+      "vars": {
+        "ENVIRONMENT": "development",
+        "ALLOWED_ORIGIN": "",
+        "LOGGER_LEVELS": "info",
+        "IP_LOG_LEVEL": "partial"
+      }
+    },
     "production": {
       "vars": {
-        "ENVIRONMENT": "production"
+        "ENVIRONMENT": "production",
+        "ALLOWED_ORIGIN": "",
+        "LOGGER_LEVELS": "info",
+        "IP_LOG_LEVEL": "partial"
       }
     }
   }

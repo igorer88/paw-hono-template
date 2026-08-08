@@ -69,7 +69,7 @@ Fast, typed routing built on Web Standards. Supports path parameters, query stri
 
 ### Centralized Error Handling
 
-- **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? } }`. Stack traces only when `ENVIRONMENT=development`. 5xx responses use the generic message `Internal Server Error`; 4xx keep the original error message.
+- **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? } }`. Stack traces only when `ENVIRONMENT=development`. 5xx responses use the generic message `Internal Server Error`; 4xx surface the message only when thrown via `HTTPException` (the deliberate, handler-authored path) — incidental `Error.message` is never echoed.
 - **notFound** — catches unmatched routes, returns `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: {method} {path}" } }` with 404.
 
 ### Health Check
@@ -129,7 +129,7 @@ Declared in `src/types.ts`. Accessible in every handler and middleware via `c.en
 
 ### Env Var Split
 
-Non-secret vars (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`) live in `wrangler.jsonc` under `vars`, with sensible defaults for local dev. `ENVIRONMENT` defaults to `development` in base `vars` and overrides to `production` under `env.production.vars`.
+Non-secret vars (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`) live in `wrangler.jsonc` under each env's `vars`, with sensible defaults for local dev. `ENVIRONMENT` is required with no default — it is set explicitly to `development` under `env.development.vars` and `production` under `env.production.vars`, so a deploy that omits `--env` fails fast at cold start instead of silently running in development.
 
 No secrets are required by default. If auth middleware is added later, use `.dev.vars` (local) and `wrangler secret put` (production) — never committed to version control.
 
@@ -205,13 +205,13 @@ Place pure functions in `src/shared/`. No Hono imports, no side effects at modul
 
 Vars are split by sensitivity:
 
-| Type                 | Source                                           | Location                          |
-| -------------------- | ------------------------------------------------ | --------------------------------- |
-| Non-secret vars      | `wrangler.jsonc` → `vars` (base + env overrides) | Committed to version control      |
-| Secrets (local)      | `.dev.vars`                                      | Gitignored                        |
-| Secrets (production) | `wrangler secret put <NAME>`                     | Cloudflare dashboard, not in repo |
+| Type                 | Source                              | Location                          |
+| -------------------- | ----------------------------------- | --------------------------------- |
+| Non-secret vars      | `wrangler.jsonc` → `vars` (per env) | Committed to version control      |
+| Secrets (local)      | `.dev.vars`                         | Gitignored                        |
+| Secrets (production) | `wrangler secret put <NAME>`        | Cloudflare dashboard, not in repo |
 
-**Non-secret vars** (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `ENVIRONMENT`) are in `wrangler.jsonc` under base `vars` with sensible defaults. `ENVIRONMENT` overrides to `production` under `env.production.vars`.
+**Non-secret vars** (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `ENVIRONMENT`) are in `wrangler.jsonc` under each env's `vars`. `ENVIRONMENT` is required with no default — `development` lives under `env.development.vars`, `production` under `env.production.vars`. A deploy without `--env` fails cold at startup (no silent development mode).
 
 No secrets are required by default. If auth middleware is added later, add secrets via `.dev.vars` (local) and `wrangler secret put` (production) — never committed.
 

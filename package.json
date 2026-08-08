@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "format": "oxfmt --write",
     "lint": "oxlint",
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --env development",
     "build": "wrangler deploy --dry-run --outdir dist",
     "test": "vitest run",
     "test:watch": "vitest",
