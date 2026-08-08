@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 
 const healthRouter = new Hono()
 
-healthRouter.get('/', (c) => {
+healthRouter.get('/', c => {
   return c.json({
     success: true,
     description: 'Health check passed',
@@ -11,8 +11,3 @@ healthRouter.get('/', (c) => {
 })
 
 export { healthRouter }
-
-
-
-
-

@@ -8,5 +8,3 @@ export const isEmptyObject = (objectName: object): boolean => {
   if (!objectName) return false
   return Object.keys(objectName).length === 0 && objectName.constructor === Object
 }
-
-
