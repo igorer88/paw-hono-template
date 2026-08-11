@@ -29,7 +29,7 @@ paw-hono-template/
     ├── routes/
     │   └── health.ts            # Health-check sub-router (/health)
     └── shared/
-        ├── ip.ts                # Pure functions: getClientIp, anonymizeIp
+        ├── ip.ts                # Pure functions: getClientIp, normalizeIp, anonymizeIp
         └── utils.ts             # Pure functions: isEmptyObject
 ```
 
@@ -63,7 +63,7 @@ Fast, typed routing built on Web Standards. Supports path parameters, query stri
 
 ### Global Middleware Stack
 
-- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds redacted headers and query keys). Sensitive headers (`authorization`, `cookie`, `proxy-authorization`, `x-api-key`, `cf-connecting-ip`) are redacted as `[REDACTED]`; the request line omits the query string. Client IP logging respects `IP_LOG_LEVEL`: `none`, `full`, `partial` (masked).
+- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds redacted headers and query keys). Debug header dumps use an **allowlist** — only `accept`, `accept-encoding`, `accept-language`, `cache-control`, `connection`, `content-length`, `content-type`, `host`, `user-agent` are logged verbatim; every other header (credentials, tokens, IP chains, custom headers) is `[REDACTED]`. Query keys are logged with values redacted. Client IP logging respects `IP_LOG_LEVEL`: `none`, `full`, `partial` (masked).
 - **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and a strict Content-Security-Policy header
 - **CORS** (`src/middleware/security.ts`) — deny-by-default: unmatched origins receive no CORS header. Allows localhost/127.0.0.1 (any protocol/port) only when `ENVIRONMENT=development`. Validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) suffix support; bare `*` is rejected at env validation. Preflight cached 86400s
 
@@ -271,7 +271,7 @@ When deploying this Worker on Lambda, the architecture changes depending on how 
 
 ### Client IP Header When Porting
 
-Client IP extraction in `src/shared/ip.ts` uses `cf-connecting-ip` as the primary source, with `x-forwarded-for` and `x-real-ip` as fallbacks. The `cf-connecting-ip` header is Cloudflare-specific — it is set by Cloudflare's reverse proxy and is not present on other platforms. When porting to another runtime:
+Client IP extraction in `src/shared/ip.ts` uses `cf-connecting-ip` as the primary source, with `x-forwarded-for` and `x-real-ip` as fallbacks. The `cf-connecting-ip` header is Cloudflare-specific — it is set by Cloudflare's reverse proxy and is not present on other platforms. All candidate values are validated against an IP regex via `normalizeIp` (rejects garbage to prevent log injection), and `x-forwarded-for` takes the **rightmost** entry — the address appended by the nearest trusted reverse proxy — rather than the client-controlled leftmost entry. When porting to another runtime:
 
 | Platform              | Primary IP source                                                                               |
 | --------------------- | ----------------------------------------------------------------------------------------------- |
