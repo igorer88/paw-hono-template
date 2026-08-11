@@ -41,7 +41,7 @@ Environment variables are split by sensitivity:
 | Variable         | Type                            | Description                                                                                                                                                                                   |
 | ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ALLOWED_ORIGIN` | string                          | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Bare `*` is rejected. Localhost/127.0.0.1 bypass applies only in development. |
-| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds redacted headers and query keys.                                 |
+| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds allowlisted headers (everything else redacted) and query keys.   |
 | `IP_LOG_LEVEL`   | `'none' \| 'full' \| 'partial'` | Client IP logging. `none` omits IP, `full` logs the raw IP, `partial` masks the last octet/group (default).                                                                                   |
 
 **Secrets** — set via `.dev.vars` for local dev, `wrangler secret put <NAME>` for production (never committed).

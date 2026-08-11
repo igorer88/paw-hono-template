@@ -106,7 +106,18 @@ describe('customLogger', () => {
     expect(all.some(l => l.includes('alice'))).toBe(false)
   })
 
-  it('logs non-sensitive header values in debug mode', async () => {
+  it('logs allowlisted header values in debug mode', async () => {
+    const { app, bindings } = createApp({
+      loggerLevel: LoggerLevel.DEBUG,
+      ipLogLevel: IpLogLevel.NONE
+    })
+    await app.request('/test', { headers: { 'accept-encoding': 'gzip' } }, bindings)
+
+    const all = consoleSpy.mock.calls.map(c => JSON.stringify(c))
+    expect(all.some(l => l.includes('gzip'))).toBe(true)
+  })
+
+  it('redacts non-allowlisted headers in debug mode', async () => {
     const { app, bindings } = createApp({
       loggerLevel: LoggerLevel.DEBUG,
       ipLogLevel: IpLogLevel.NONE
@@ -114,7 +125,23 @@ describe('customLogger', () => {
     await app.request('/test', { headers: { 'x-custom': 'val' } }, bindings)
 
     const all = consoleSpy.mock.calls.map(c => JSON.stringify(c))
-    expect(all.some(l => l.includes('val'))).toBe(true)
+    expect(all.some(l => l.includes('val'))).toBe(false)
+  })
+
+  it('does not log IP chains in debug mode', async () => {
+    const { app, bindings } = createApp({
+      loggerLevel: LoggerLevel.DEBUG,
+      ipLogLevel: IpLogLevel.NONE
+    })
+    await app.request(
+      '/test',
+      { headers: { 'x-forwarded-for': '198.51.100.2, 192.0.2.1' } },
+      bindings
+    )
+
+    const all = consoleSpy.mock.calls.map(c => JSON.stringify(c))
+    expect(all.some(l => l.includes('198.51.100.2'))).toBe(false)
+    expect(all.some(l => l.includes('192.0.2.1'))).toBe(false)
   })
 
   it('defaults to info when level is missing', async () => {

@@ -5,12 +5,18 @@ import type { AppInstance } from '@/types'
 
 const REDACTED = '[REDACTED]'
 
-const SENSITIVE_HEADERS = new Set([
-  'authorization',
-  'cookie',
-  'proxy-authorization',
-  'x-api-key',
-  'cf-connecting-ip'
+// Allowlist of headers safe to log in DEBUG. Anything else (credentials,
+// tokens, IP headers, custom/internal headers) is redacted.
+const LOGGABLE_HEADERS = new Set([
+  'accept',
+  'accept-encoding',
+  'accept-language',
+  'cache-control',
+  'connection',
+  'content-length',
+  'content-type',
+  'host',
+  'user-agent'
 ])
 
 export const customLogger = async (c: Context<AppInstance>, next: Next) => {
@@ -39,7 +45,7 @@ export const customLogger = async (c: Context<AppInstance>, next: Next) => {
     const headers = Object.fromEntries(
       [...c.req.raw.headers].map(([name, value]) => [
         name,
-        SENSITIVE_HEADERS.has(name) ? REDACTED : value
+        LOGGABLE_HEADERS.has(name) ? value : REDACTED
       ])
     )
     console.log('  Headers:', headers)
