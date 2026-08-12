@@ -2,11 +2,13 @@ import { Hono } from 'hono'
 import { secureHeaders } from 'hono/secure-headers'
 import { validateEnv } from '@/env'
 import {
+  bodyLimitGuard,
   customCors,
   customLogger,
   correlationId,
   errorHandler,
-  notFoundHandler
+  notFoundHandler,
+  requestTimeout
 } from '@/middleware'
 import { healthRouter } from '@/routes/health'
 import type { AppInstance } from '@/types'
@@ -17,6 +19,8 @@ const app = new Hono<AppInstance>()
 // 2. Global Guardrails & Utilities
 app.use('*', correlationId) // First: stamp a request id before any logging/error handling
 app.use('*', customLogger)
+app.use('*', requestTimeout) // Abort requests that exceed REQUEST_TIMEOUT_MS
+app.use('*', bodyLimitGuard) // Reject bodies larger than MAX_BODY_SIZE
 app.use(
   '*',
   secureHeaders({

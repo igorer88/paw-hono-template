@@ -38,11 +38,13 @@ Environment variables are split by sensitivity:
 
 **Non-secret vars** — configured in `wrangler.jsonc` per environment under `vars` (checked into version control):
 
-| Variable         | Type                            | Description                                                                                                                                                                                   |
-| ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ALLOWED_ORIGIN` | string                          | Comma-separated CORS origins with `*` wildcard support (e.g., `https://app.example.com,https://*.example.com`). Bare `*` is rejected. Localhost/127.0.0.1 bypass applies only in development. |
-| `LOGGER_LEVELS`  | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds allowlisted headers (everything else redacted) and query keys.   |
-| `IP_LOG_LEVEL`   | `'none' \| 'full' \| 'partial'` | Client IP logging. `none` omits IP, `full` logs the raw IP, `partial` masks the last octet/group (default).                                                                                   |
+| Variable             | Type                            | Description                                                                                                                                                                                                                                                                                                                                 |
+| -------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGIN`     | string                          | Comma-separated CORS origins. Each entry must be a bare explicit `http(s)://host[:port]` origin; `*` is allowed only as a leading subdomain label (e.g., `https://app.example.com,https://*.example.com`). Bare `*`, scheme-less entries, non-http schemes, and paths are rejected. Localhost/127.0.0.1 bypass applies only in development. |
+| `LOGGER_LEVELS`      | `'none' \| 'info' \| 'debug'`   | Request logging verbosity. `none` silences all request logs, `info` logs method/path/status/duration (default), `debug` adds allowlisted headers (everything else redacted) and query keys.                                                                                                                                                 |
+| `IP_LOG_LEVEL`       | `'none' \| 'full' \| 'partial'` | Client IP logging. `none` omits IP, `full` logs the raw IP, `partial` masks the last octet/group (default).                                                                                                                                                                                                                                 |
+| `REQUEST_TIMEOUT_MS` | number                          | Abort handlers that exceed this many milliseconds with a 504 response (default 10000).                                                                                                                                                                                                                                                      |
+| `MAX_BODY_SIZE`      | number                          | Reject request bodies larger than this many bytes with a 413 response (default 1000000).                                                                                                                                                                                                                                                    |
 
 **Secrets** — set via `.dev.vars` for local dev, `wrangler secret put <NAME>` for production (never committed).
 
@@ -92,6 +94,7 @@ src/
 │   ├── index.ts          # Barrel — re-exports all middleware
 │   ├── correlation.ts    # Correlation id middleware (X-Request-Id header)
 │   ├── error.ts          # Error handler + 404 handler
+│   ├── guards.ts         # Request timeout + body limit guards
 │   ├── logger.ts         # Request logging (levels + IP + redaction)
 │   └── security.ts       # Custom CORS middleware
 ├── routes/

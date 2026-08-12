@@ -14,7 +14,9 @@
         "ENVIRONMENT": "development",
         "ALLOWED_ORIGIN": "",
         "LOGGER_LEVELS": "info",
-        "IP_LOG_LEVEL": "partial"
+        "IP_LOG_LEVEL": "partial",
+        "REQUEST_TIMEOUT_MS": 10000,
+        "MAX_BODY_SIZE": 1000000
       }
     },
     "production": {
@@ -22,7 +24,9 @@
         "ENVIRONMENT": "production",
         "ALLOWED_ORIGIN": "",
         "LOGGER_LEVELS": "info",
-        "IP_LOG_LEVEL": "partial"
+        "IP_LOG_LEVEL": "partial",
+        "REQUEST_TIMEOUT_MS": 10000,
+        "MAX_BODY_SIZE": 1000000
       }
     }
   }

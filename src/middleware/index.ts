@@ -1,4 +1,5 @@
 export { correlationId } from './correlation'
 export { customCors } from './security'
 export { customLogger } from './logger'
+export { bodyLimitGuard, requestTimeout } from './guards'
 export { errorHandler, notFoundHandler } from './error'

@@ -88,4 +88,19 @@ describe('App integration', () => {
     expect(body.requestId).toBe('caller-404')
     expect(res.headers.get('x-request-id')).toBe('caller-404')
   })
+
+  it('rejects oversized request bodies with 413 before routing', async () => {
+    const res = await worker.fetch(
+      new Request('http://localhost/unknown', {
+        method: 'POST',
+        body: 'x'.repeat(2 * 1024 * 1024)
+      }),
+      bindings,
+      ctx
+    )
+    expect(res.status).toBe(413)
+
+    const body = (await res.json()) as { error: { message: string } }
+    expect(body.error.message).toBe('Payload Too Large')
+  })
 })

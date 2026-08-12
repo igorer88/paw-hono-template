@@ -31,18 +31,21 @@ See `docs/architecture.md` §6 for the full dependency table.
 Registration order in `src/index.ts` is significant:
 
 ```
-app.use('*', correlationId)   // 1. Correlation id — must run before logging and error handling
-app.use('*', customLogger)    // 2. Logging (level via LOGGER_LEVELS; lines prefixed with [req:<id>])
-app.use('*', secureHeaders()) // 3. Security headers
-app.use('*', customCors)      // 4. CORS
-app.onError(errorHandler)     // 5. Error catch-all (after middleware, before routes)
-app.notFound(notFoundHandler) // 6. 404 fallback
-app.route('/health', ...)     // 7. Routes mounted last
+app.use('*', correlationId)    // 1. Correlation id — must run before logging and error handling
+app.use('*', customLogger)     // 2. Logging (level via LOGGER_LEVELS; lines prefixed with [req:<id>])
+app.use('*', requestTimeout)   // 3. Request timeout (REQUEST_TIMEOUT_MS → 504)
+app.use('*', bodyLimitGuard)   // 4. Body size limit (MAX_BODY_SIZE → 413)
+app.use('*', secureHeaders())  // 5. Security headers
+app.use('*', customCors)       // 6. CORS
+app.onError(errorHandler)      // 7. Error catch-all (after middleware, before routes)
+app.notFound(notFoundHandler)  // 8. 404 fallback
+app.route('/health', ...)      // 9. Routes mounted last
 ```
 
 - `onError` and `notFound` must be registered **after** middleware but **before** routes
 - Any middleware registered after `onError` will not be wrapped by the error handler
 - Correlation id first is intentional: every log line, error envelope, and response carries `requestId`
+- `requestTimeout` and `bodyLimitGuard` (in `src/middleware/guards.ts`) read their limits from `c.env` per request, so no registration-time config is needed; both return envelopes through the error handler (504 / 413)
 
 ## Routes — request/response conventions
 
@@ -56,7 +59,7 @@ Key points:
 - 5xx responses always use the generic message `Internal Server Error`; 4xx surface a message to the client only when thrown via `HTTPException(status, { message })` — plain `Error.message` is never echoed
 - 404 returns `{ success: false, error: { message: "Route not found: {method} {path}" } }`
 - Error handler preserves existing response status; falls back to 500 if status is 200 (unset)
-- CORS denies unmatched origins (no `Access-Control-Allow-Origin` header); localhost/127.0.0.1 bypass only when `ENVIRONMENT=development`; validates against comma-separated `ALLOWED_ORIGIN` with `*` wildcard support; bare `*` is rejected at env validation
+- CORS denies unmatched origins (no `Access-Control-Allow-Origin` header); localhost/127.0.0.1 bypass only when `ENVIRONMENT=development`; validates against comma-separated `ALLOWED_ORIGIN` — each entry must be a bare explicit `http(s)://host[:port]` origin, `*` allowed only as a leading subdomain label (e.g., `https://*.example.com`); bare `*`, scheme-less entries, non-http schemes, and paths are rejected at env validation
 - CORS preflight cached 86400s (24h)
 
 ## Adding a new route
@@ -155,7 +158,7 @@ The first thing in a real project: `git checkout -b develop && git push -u origi
 
 See `docs/architecture.md` §8 Operational Considerations — Env Var Management for the full details.
 
-Non-secret vars live in `wrangler.jsonc` under each env's `vars`. Secrets live in `.dev.vars` (local) and `wrangler secret put` (production). `ENVIRONMENT` is required (no default) and set explicitly per env (`development`/`production`) — a bare `wrangler deploy` without `--env` fails fast at cold start.
+Non-secret vars live in `wrangler.jsonc` under each env's `vars`. Secrets live in `.dev.vars` (local) and `wrangler secret put` (production). `ENVIRONMENT` is required (no default) and set explicitly per env (`development`/`production`) — a bare `wrangler deploy` without `--env` fails fast at cold start. `REQUEST_TIMEOUT_MS` and `MAX_BODY_SIZE` power the request guards (`src/middleware/guards.ts`) and have zod defaults (10000 / 1_000_000) when unset.
 
 Key additional rule: all env vars must be declared in `src/types.ts` under the `Bindings` type before use (the zod schema in `src/env.ts` is the single source of truth).
 
