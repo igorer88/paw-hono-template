@@ -174,7 +174,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 - `feat` → minor, `fix`/`perf` → patch, `type!:` or `BREAKING CHANGE` footer → major
 - `chore`, `test`, `style`, `refactor`, `docs` do not trigger a release
 
-On every push to `main` or `release/vX.Y.Z`, the CI pipeline runs typecheck → lint → test → build → semantic-release, which bumps `package.json`, generates `CHANGELOG.md`, creates a git tag, and publishes a GitHub Release with build artifacts attached. Releases run under the GitHub **`release` environment** — with required reviewers configured (Settings → Environments → `release`), production and staging releases require manual approval. CI also runs CodeQL SAST (`security-extended`) and a dependency review on PRs; all workflows use SHA-pinned actions and pinned `ubuntu-24.04` runners.
+On every push to `main` or `release/vX.Y.Z`, the CI pipeline runs typecheck → lint → test → build → semantic-release, which bumps `package.json`, generates `CHANGELOG.md`, creates a git tag, and publishes a GitHub Release with build artifacts attached. Releases run under the GitHub **`release` environment** — with required reviewers configured (Settings → Environments → `release`), production and staging releases require manual approval. CI also includes CodeQL SAST (`security-extended`) and a dependency review, which auto-enable when the repository is public (both need GitHub Advanced Security on private repos); all workflows use SHA-pinned actions and pinned `ubuntu-24.04` runners.
 
 ### Portability
 
