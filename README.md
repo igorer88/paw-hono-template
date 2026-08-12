@@ -1,6 +1,8 @@
 <p align="center">
-  <a href="./" target="blank"><img src=".github/assets/paw.svg" width="100" alt="Paw Logo" /></a>
-  <!-- Hono logo placeholder — add when available -->
+  <a href="./" target="blank">
+    <img src=".github/assets/paw.svg" width="80" alt="Paw Logo" />
+    <img src=".github/assets/hono.svg" width="80" alt="Hono Logo" style="margin-left: 16px;" />
+  </a>
 </p>
 
 <p align="center">Paw is a production-ready Hono template for Cloudflare Workers.<br />Secured by design. Agnostic by architecture — also deployable on AWS Lambda, GCP Cloud Run, Bun, Deno, or Node.js.</p>
