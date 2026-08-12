@@ -133,7 +133,7 @@ The `release` job runs under the GitHub **`release` environment**. If protection
 
 ### Configuration
 
-- `release.config.js` — branch rules, plugin pipeline, release rules per commit type
+- `release.config.mjs` — branch rules, plugin pipeline, release rules per commit type
 - `chore`, `test`, `style`, `refactor`, `docs` commits do not trigger a release
 - `feat` → minor bump, `fix`/`perf` → patch bump, breaking changes (`!`) → major bump
 - Use `BREAKING CHANGE` footer or `type!:` for breaking changes

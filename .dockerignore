@@ -39,7 +39,7 @@ opencode.json
 .oxlintrc.json
 .editorconfig
 .nvmrc
-commitlint.config.js
-lint-staged.config.js
-release.config.js
+commitlint.config.mjs
+lint-staged.config.mjs
+release.config.mjs
 vitest.config.ts
