@@ -1,0 +1,45 @@
+# VCS
+.git
+.github
+.husky
+.gitignore
+
+# deps / build output
+node_modules
+dist
+.wrangler
+coverage
+
+# env & secrets
+.env
+.env.*
+.dev.vars
+
+# logs
+logs
+*.log
+
+# docs & meta
+docs
+AGENTS.md
+CHANGELOG.md
+
+# IDE / local
+.idea
+.vscode
+.DS_Store
+
+# AI assistant files
+.assistant
+.opencode
+opencode.json
+
+# tooling config not needed in the image
+.oxfmtrc.json
+.oxlintrc.json
+.editorconfig
+.nvmrc
+commitlint.config.js
+lint-staged.config.js
+release.config.js
+vitest.config.ts
