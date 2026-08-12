@@ -20,7 +20,7 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 - **Security** — CORS whitelist, security headers (HSTS, CSP, XSS), centralized error handler (no stack leaks in production), consistent response envelope. Rate limiting is handled at the Cloudflare WAF level — configure via dashboard or `wrangler.jsonc` (see [Cloudflare docs](https://developers.cloudflare.com/waf/custom-rules/rate-limiting/)). Hono-level rate limiting (via Durable Objects) is only needed for dynamic per-user limits.
 - **Developer Experience** — Strict TypeScript, `@/` import alias, Oxlint + Oxfmt, modular file structure
 - **Infrastructure** — Wrangler observability, `--minify` deploy, single environment config
-- **DevOps** — Conventional commits, automated semantic-release pipeline with changelog generation, git tagging, and GitHub Releases. Staging prereleases from `release/*` branches
+- **DevOps** — Conventional commits, automated semantic-release pipeline with changelog generation, git tagging, and GitHub Releases. Staging prereleases from `release/v*` branches, gated behind an approval environment.
 
 ## Roadmap
 
@@ -164,17 +164,17 @@ When starting a new project with this template, consider the deployment strategy
 
 Versioning, changelog, and releases are fully automated via **semantic-release**.
 
-| Branch      | Push triggers      | Tag / Release                    |
-| ----------- | ------------------ | -------------------------------- |
-| `main`      | Full release       | `v1.2.3` — GitHub Release        |
-| `release/*` | Staging prerelease | `v1.2.3-staging.1` — Pre-release |
+| Branch           | Push triggers      | Tag / Release                    |
+| ---------------- | ------------------ | -------------------------------- |
+| `main`           | Full release       | `v1.2.3` — GitHub Release        |
+| `release/vX.Y.Z` | Staging prerelease | `v1.2.3-staging.1` — Pre-release |
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): message`). The type determines the version bump:
 
 - `feat` → minor, `fix`/`perf` → patch, `type!:` or `BREAKING CHANGE` footer → major
 - `chore`, `test`, `style`, `refactor`, `docs` do not trigger a release
 
-On every push to `main` or `release/*`, the CI pipeline runs typecheck → lint → test → build → semantic-release, which bumps `package.json`, generates `CHANGELOG.md`, creates a git tag, and publishes a GitHub Release with build artifacts attached.
+On every push to `main` or `release/vX.Y.Z`, the CI pipeline runs typecheck → lint → test → build → semantic-release, which bumps `package.json`, generates `CHANGELOG.md`, creates a git tag, and publishes a GitHub Release with build artifacts attached. Releases run under the GitHub **`release` environment** — with required reviewers configured (Settings → Environments → `release`), production and staging releases require manual approval. CI also runs CodeQL SAST (`security-extended`) and a dependency review on PRs; all workflows use SHA-pinned actions and pinned `ubuntu-24.04` runners.
 
 ### Portability
 

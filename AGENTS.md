@@ -8,6 +8,7 @@ See `docs/architecture.md` for full design intent and `README.md` for install in
 - Vitest configured (`vitest/globals` in tsconfig types); tests live colocated as `*.test.ts` next to sources and run via `pnpm run test`
 - Two environments (`development`, `production`) defined in `wrangler.jsonc`, each setting `ENVIRONMENT` explicitly. `ENVIRONMENT` is required with no default — omitting `--env` fails at cold start.
 - CI, pre-commit hooks — husky + lint-staged + commitlint configured. See `Commit convention` below.
+- CI workflows (`.github/workflows/`): `ci.yml` (typecheck → lint → test:coverage), `codeql.yml` (CodeQL SAST, `security-extended`), `dependency-review.yml` (PR dependency/license gate), `release.yml` (semantic-release, runs under the `release` environment). All actions are pinned to verified SHAs; runners are pinned to `ubuntu-24.04`.
 
 ## Package boundaries
 
@@ -105,28 +106,30 @@ This format follows the [Conventional Commits](https://www.conventionalcommits.o
 
 ## Git flow
 
-- `main` — production-ready. Only merges from `release/*` or `hotfix/*`.
+- `main` — production-ready. Only merges from `release/v*` or `hotfix/*`.
 - `develop` — integration branch. Feature and fix branches branch off and merge back here.
 - `feature/*` — branch from `develop`, merge back to `develop`.
 - `fix/*` — branch from `develop`, merge back to `develop`.
-- `release/*` — branch from `develop`, merge to `main` + back to `develop`.
+- `release/vX.Y.Z` — branch from `develop`, merge to `main` + back to `develop`. Only `release/v*` branches trigger the staging release pipeline (`release.yml`); name them with a version prefix.
 - `hotfix/*` — branch from `main`, merge to `main` + `develop`.
 
 ## Publish workflow
 
 Automated release orchestrated by **semantic-release** via `.github/workflows/release.yml`.
 
-| Trigger             | Branch      | Tag                | Release type       |
-| ------------------- | ----------- | ------------------ | ------------------ |
-| Push to `main`      | `main`      | `vX.Y.Z`           | Full release       |
-| Push to `release/*` | `release/*` | `vX.Y.Z-staging.N` | Staging prerelease |
+| Trigger                  | Branch           | Tag                | Release type       |
+| ------------------------ | ---------------- | ------------------ | ------------------ |
+| Push to `main`           | `main`           | `vX.Y.Z`           | Full release       |
+| Push to `release/vX.Y.Z` | `release/vX.Y.Z` | `vX.Y.Z-staging.N` | Staging prerelease |
+
+The `release` job runs under the GitHub **`release` environment**. If protection rules (required reviewers) are configured in Settings → Environments → `release`, both production and staging releases require approval before any step runs. The workflow is scoped to `main` + `release/v*` only, so arbitrary pushes cannot trigger a release or use the write-scoped token.
 
 ### Lifecycle
 
-1. Merge `release/*` into `main` (or push directly to either branch)
+1. Merge `release/vX.Y.Z` into `main` (or push directly to either branch)
 2. `release.yml` runs: typecheck → lint → test → build → semantic-release
 3. semantic-release analyzes commits since last tag, determines version bump, writes `CHANGELOG.md`, bumps `package.json`, creates git tag, commits changes back, and creates a GitHub Release with `dist/` attached
-4. Staging prereleases from `release/*` are marked as "Pre-release" on GitHub
+4. Staging prereleases from `release/vX.Y.Z` are marked as "Pre-release" on GitHub
 
 ### Configuration
 
@@ -141,16 +144,16 @@ After a full release on `main`:
 
 1. Merge `main` back into `develop`
 2. `git checkout develop && git pull`
-3. Delete the `release/*` branch locally and on remote
+3. Delete the `release/vX.Y.Z` branch locally and on remote
 
 After a PR is merged:
 
 1. `git checkout develop && git pull` — sync merged changes
 2. `git branch -d <branch-name>` — delete the local feature branch
 
-For `release/*` and `hotfix/*`, repeat with `main` after merging there.
+For `release/vX.Y.Z` and `hotfix/*`, repeat with `main` after merging there.
 
-After a PR is merged to `main` (release): merge `main` back into `develop` and delete the `release/*` or `hotfix/*` branch.
+After a PR is merged to `main` (release): merge `main` back into `develop` and delete the `release/vX.Y.Z` or `hotfix/*` branch.
 
 The first thing in a real project: `git checkout -b develop && git push -u origin develop`.
 
