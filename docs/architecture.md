@@ -246,6 +246,8 @@ After adding or changing bindings (KV, R2, D1, etc.), run `pnpm run cf-typegen` 
 - Suites cover middleware (logger, CORS, error handler), shared utilities (IP), routes (health), env schema, and app-level integration (`src/index.test.ts`)
 - `pnpm run test:watch` for watch mode, `pnpm run test:coverage` for the Istanbul coverage report
 - CI enforces `typecheck` → `lint` → `test` → `build` before release
+- Security gates in CI: `codeql.yml` (CodeQL SAST with the `security-extended` query suite) and `dependency-review.yml` (fails PRs introducing high-severity vulnerabilities or disallowed licenses). Both are gated on `github.repository_visibility == 'public'` — skipped on private repos (code scanning and dependency review require GitHub Advanced Security there) and auto-enabled if the template is made public. Native secret scanning is enabled in the repo settings.
+- Release runs (`.github/workflows/release.yml`) are gated behind the GitHub **`release` environment** — with required reviewers configured in Settings → Environments → `release`, production and staging releases need manual approval. The workflow triggers only on `main` and `release/v*`, so arbitrary pushes cannot obtain the write-scoped token.
 - See `AGENTS.md` for code conventions, commands, and middleware registration rules.
 
 ## 9. Runtime Portability
