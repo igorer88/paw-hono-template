@@ -1,0 +1,8 @@
+title = "paw-hono-template gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Low-entropy secret-shaped fixtures in logger tests that assert request redaction"
+regexes = ['''secret-token''', '''api-key-123''', '''supersecret''']

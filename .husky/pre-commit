@@ -1,2 +1,9 @@
 #!/bin/sh
 npx lint-staged
+
+# Secret scan on staged changes; skipped if gitleaks is not installed
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --no-banner --redact
+else
+  echo "gitleaks: not installed - skipping staged secret scan (brew install gitleaks)"
+fi
