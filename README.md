@@ -87,9 +87,9 @@ Response:
 
 ```
 src/
-├── index.ts              # App entrypoint — mounts middleware + routes, validates env
+├── index.ts              # App entrypoint — mounts middleware + routes, validates env at cold start
 ├── env.ts                # Zod schema + env validation (single source of truth for vars)
-├── types.ts              # Bindings, Variables, AppInstance types
+├── types.ts              # Bindings, Variables, AppInstance, Result<T> types
 ├── middleware/
 │   ├── index.ts          # Barrel — re-exports all middleware
 │   ├── correlation.ts    # Correlation id middleware (X-Request-Id header)
@@ -102,7 +102,8 @@ src/
 └── shared/
     ├── ip.ts             # Client IP extraction + anonymization
     ├── requestId.ts      # Request id + traceparent helpers
-    └── utils.ts          # Pure utility functions
+    ├── utils.ts          # Pure utility functions
+    └── validate.ts       # validateInput — Zod-safeParse → Result<T> (no throw)
 docs/
 ├── architecture.md       # Design intent, request lifecycle, extensibility
 └── code_guidelines.md    # Coding conventions, response shape, error handling

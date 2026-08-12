@@ -54,7 +54,7 @@ Placement hierarchy (least to most shared):
    ```
 2. **Local file** — types used by multiple functions in the same file, defined at the top
 3. **Domain types file** — types shared across a few related files (e.g., `src/routes/orders/types.ts`)
-4. **`src/types.ts`** — only the application-wide Hono generics: `Bindings`, `Variables`, `AppInstance`
+4. **`src/types.ts`** — the application-wide Hono generics (`Bindings`, `Variables`, `AppInstance`) plus the `Result<T>` union used across services
 
 Prefer inline over extraction until duplication proves extraction worthwhile.
 

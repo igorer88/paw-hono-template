@@ -20,11 +20,12 @@ paw-hono-template/
 └── src/
     ├── index.ts                 # App entrypoint — creates Hono app, mounts middleware + routes
     ├── env.ts                   # Zod schema + env validation — single source of truth for vars
-    ├── types.ts                 # Bindings (env), Variables (request-scoped), AppInstance composite type
+    ├── types.ts                 # Bindings (env), Variables (request-scoped), AppInstance, Result<T>
     ├── middleware/
     │   ├── index.ts             # Barrel — re-exports public API
     │   ├── correlation.ts       # Request correlation id (resolve/generate, X-Request-Id header, traceParent capture)
     │   ├── error.ts             # errorHandler (stack traces in dev only, generic 5xx) + notFoundHandler
+    │   ├── guards.ts            # requestTimeout (504) + bodyLimitGuard (413) — limits read from c.env
     │   ├── logger.ts            # Request logging (levels, [req:<id>] prefix, IP logging, header/query redaction)
     │   └── security.ts          # CORS middleware (origin whitelist, deny-by-default, 24h preflight cache)
     ├── routes/
@@ -148,11 +149,13 @@ No secrets are required by default. If auth middleware is added later, use `.dev
 
 ```typescript
 type Variables = {
-  userId?: string
+  userId?: string // set by future auth middleware
+  requestId: string // correlation id — set by src/middleware/correlation.ts
+  traceParent?: string // W3C trace context when an upstream span is present
 }
 ```
 
-Set via `c.set('userId', value)` in middleware (e.g., auth middleware), read via `c.get('userId')` in downstream handlers. Typed through the Hono generic — no type casts needed.
+`requestId` is always set by the correlation middleware; `traceParent` is present only when a valid inbound `traceparent` header exists. `userId` is reserved for future auth middleware. Set via `c.set('requestId', value)` in middleware, read via `c.get('requestId')` in downstream handlers. Typed through the Hono generic — no type casts needed.
 
 ### AppInstance (Composite Type)
 
@@ -186,7 +189,7 @@ Defined in `src/types.ts` and imported by every route file and `src/index.ts`. P
 ### Adding a Route Sub-Router
 
 1. Create `src/routes/<name>.ts`
-2. `import { Hono } from 'hono'` + `import type { AppInstance } from '../types'`
+2. `import { Hono } from 'hono'` + `import type { AppInstance } from '@/types'`
 3. `const router = new Hono<AppInstance>()`
 4. Define handlers (`router.get('/path', (c) => ...)`)
 5. `export { router as <name>Router }`
@@ -210,7 +213,7 @@ Services hold cloud-agnostic business logic and their Zod schemas, so the same c
 
 1. Create `src/services/<domain>.ts`
 2. Define the input with a Zod schema and derive its type (`z.infer<typeof schema>`)
-3. Export service functions that receive **untyped input** (typically `unknown`), validate it at the boundary with `validateInput` from `@/shared/validate`, and return `Result<T>` from `@/shared/result`
+3. Export service functions that receive **untyped input** (typically `unknown`), validate it at the boundary with `validateInput` from `@/shared/validate`, and return `Result<T>` from `@/types`
 4. Accept `Bindings` (from `@/types`) as an explicit parameter when env access is needed — never import wrangler runtime types
 5. No Hono imports, no `c.json()`, no HTTP status codes or response envelopes
 
@@ -219,7 +222,7 @@ Services hold cloud-agnostic business logic and their Zod schemas, so the same c
 import { z } from 'zod'
 import type { Bindings } from '@/types'
 import { validateInput } from '@/shared/validate'
-import type { Result } from '@/shared/result'
+import type { Result } from '@/types'
 
 export const createUserSchema = z.object({
   email: z.string().email(),
@@ -312,8 +315,13 @@ Hono's runtime-agnostic design means the same routing, middleware, and error han
 Only `src/index.ts` is platform-specific. The rest of the codebase stays untouched:
 
 ```typescript
-// Cloudflare Workers (default)
-export default app
+// Cloudflare Workers (default) — validateEnv fails fast at cold start
+import { validateEnv } from '@/env'
+export default {
+  fetch(request: Request, env: Record<string, unknown>, executionContext: ExecutionContext) {
+    return app.fetch(request, validateEnv(env), executionContext)
+  }
+}
 
 // AWS Lambda — src/lambda.ts
 import { handle } from '@hono/aws-lambda'
