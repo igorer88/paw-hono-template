@@ -2,7 +2,7 @@ services:
   api:
     restart: unless-stopped
     container_name: paw-hono-api
-    image: paw-hono-api:latest
+    image: paw-hono-api:${API_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
