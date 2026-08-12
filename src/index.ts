@@ -1,7 +1,13 @@
 import { Hono } from 'hono'
 import { secureHeaders } from 'hono/secure-headers'
 import { validateEnv } from '@/env'
-import { customCors, customLogger, errorHandler, notFoundHandler } from '@/middleware'
+import {
+  customCors,
+  customLogger,
+  correlationId,
+  errorHandler,
+  notFoundHandler
+} from '@/middleware'
 import { healthRouter } from '@/routes/health'
 import type { AppInstance } from '@/types'
 
@@ -9,6 +15,7 @@ import type { AppInstance } from '@/types'
 const app = new Hono<AppInstance>()
 
 // 2. Global Guardrails & Utilities
+app.use('*', correlationId) // First: stamp a request id before any logging/error handling
 app.use('*', customLogger)
 app.use(
   '*',

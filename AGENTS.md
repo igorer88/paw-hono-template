@@ -31,17 +31,18 @@ See `docs/architecture.md` §6 for the full dependency table.
 Registration order in `src/index.ts` is significant:
 
 ```
-app.use('*', customLogger)    // 1. Logging first (level via LOGGER_LEVELS)
-app.use('*', secureHeaders()) // 2. Security headers
-app.use('*', customCors)      // 3. CORS
-app.onError(errorHandler)     // 4. Error catch-all (after middleware, before routes)
-app.notFound(notFoundHandler) // 5. 404 fallback
-app.route('/health', ...)     // 6. Routes mounted last
+app.use('*', correlationId)   // 1. Correlation id — must run before logging and error handling
+app.use('*', customLogger)    // 2. Logging (level via LOGGER_LEVELS; lines prefixed with [req:<id>])
+app.use('*', secureHeaders()) // 3. Security headers
+app.use('*', customCors)      // 4. CORS
+app.onError(errorHandler)     // 5. Error catch-all (after middleware, before routes)
+app.notFound(notFoundHandler) // 6. 404 fallback
+app.route('/health', ...)     // 7. Routes mounted last
 ```
 
 - `onError` and `notFound` must be registered **after** middleware but **before** routes
 - Any middleware registered after `onError` will not be wrapped by the error handler
-- Logger before headers is intentional: request logged before any response processing
+- Correlation id first is intentional: every log line, error envelope, and response carries `requestId`
 
 ## Routes — request/response conventions
 
@@ -49,7 +50,8 @@ See `docs/code_guidelines.md` sections Response Shape, Status Codes, and Error H
 
 Key points:
 
-- Responses use `c.json()` with shape `{ success: boolean, description?: string, error?: { message: string, stack?: string }, data?: unknown }`
+- Responses use `c.json()` with shape `{ success: boolean, description?: string, error?: { message: string, stack?: string }, data?: unknown, requestId?: string }`
+- Every response carries an `X-Request-Id` header (set by `src/middleware/correlation.ts`); the same id appears on all log lines for that request and in the error envelope as `requestId`
 - Stack traces only included when `ENVIRONMENT=development` (checked at runtime in `src/middleware/error.ts`)
 - 5xx responses always use the generic message `Internal Server Error`; 4xx surface a message to the client only when thrown via `HTTPException(status, { message })` — plain `Error.message` is never echoed
 - 404 returns `{ success: false, error: { message: "Route not found: {method} {path}" } }`

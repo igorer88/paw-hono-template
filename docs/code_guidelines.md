@@ -117,12 +117,15 @@ All handlers return `c.json()` with this shape:
   success: boolean
   description?: string   // human-readable summary; always present on errors
   data?: unknown
+  requestId?: string     // correlation id, matches the X-Request-Id response header
   error?: {
     message: string
     stack?: string       // only in development
   }
 }
 ```
+
+Every response also carries an `X-Request-Id` header set by `src/middleware/correlation.ts` — a validated inbound `x-request-id`/`x-correlation-id` or a generated UUID v4. Route handlers can read it via `c.get('requestId')`.
 
 ## Status Codes
 
