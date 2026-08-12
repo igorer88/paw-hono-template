@@ -29,10 +29,12 @@ paw-hono-template/
     │   └── security.ts          # CORS middleware (origin whitelist, deny-by-default, 24h preflight cache)
     ├── routes/
     │   └── health.ts            # Health-check sub-router (/health)
+    ├── services/               # Cloud-agnostic business logic + Zod schemas (see §7.4)
     └── shared/
         ├── ip.ts                # Pure functions: getClientIp, normalizeIp, anonymizeIp
         ├── requestId.ts         # Pure functions: generate/sanitize/extract request ids + traceparent
-        └── utils.ts             # Pure functions: isEmptyObject
+        ├── utils.ts             # Pure functions: isEmptyObject
+        └── validate.ts          # validateInput — Zod-safeParse → Result<T> (no throw)
 ```
 
 ## 2. Core Design Principles
@@ -201,6 +203,57 @@ Defined in `src/types.ts` and imported by every route file and `src/index.ts`. P
 ### Adding Shared Utilities
 
 Place pure functions in `src/shared/`. No Hono imports, no side effects at module level. Import via `@/shared/<name>`.
+
+### Adding a Service
+
+Services hold cloud-agnostic business logic and their Zod schemas, so the same code runs behind HTTP routes, direct function calls, RPC handlers, queues, or tests:
+
+1. Create `src/services/<domain>.ts`
+2. Define the input with a Zod schema and derive its type (`z.infer<typeof schema>`)
+3. Export service functions that receive **untyped input** (typically `unknown`), validate it at the boundary with `validateInput` from `@/shared/validate`, and return `Result<T>` from `@/shared/result`
+4. Accept `Bindings` (from `@/types`) as an explicit parameter when env access is needed — never import wrangler runtime types
+5. No Hono imports, no `c.json()`, no HTTP status codes or response envelopes
+
+```typescript
+// src/services/user.ts
+import { z } from 'zod'
+import type { Bindings } from '@/types'
+import { validateInput } from '@/shared/validate'
+import type { Result } from '@/shared/result'
+
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2).max(100)
+})
+
+export const createUser = async (
+  rawInput: unknown,
+  env: Bindings
+): Promise<Result<{ id: string }>> => {
+  const input = validateInput(createUserSchema, rawInput)
+  if (!input.success) return input
+  // business logic here — any I/O, no Hono types
+  return { success: true, data: { id: 'usr_123' } }
+}
+```
+
+**HTTP adapter** (in `src/routes/<domain>.ts`): extract the request payload, call the service, and map failures onto the existing error path — never echo a plain `Error.message`; throw `HTTPException(status, { message })` so the global `errorHandler` builds the envelope (`description`, `requestId`, dev-only `stack`):
+
+```typescript
+const result = await createUser(body, c.env)
+if (!result.success) {
+  throw new HTTPException(400, { message: result.error.message })
+}
+return c.json({ success: true, data: result.data }, 201)
+```
+
+**Function call / RPC adapter**: invoke the service directly — identical validation, no HTTP involved:
+
+```typescript
+const result = await createUser(payload, env)
+```
+
+The service layer stays fully portable: swapping runtimes only touches the adapter (`src/index.ts` and route files), never `src/services/`.
 
 ## 8. Operational Considerations
 
