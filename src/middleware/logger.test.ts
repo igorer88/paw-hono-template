@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { customLogger } from './logger'
+import { correlationId } from './correlation'
 import { LoggerLevel, IpLogLevel } from '@/env'
 import type { AppInstance } from '@/types'
 import type { MockInstance } from 'vitest'
@@ -11,6 +12,7 @@ const baseBindings = {
 
 const createApp = (opts: { loggerLevel: string; ipLogLevel: string }) => {
   const app = new Hono<AppInstance>()
+  app.use('*', correlationId)
   app.use('*', customLogger)
   app.get('/test', c => c.json({ success: true }))
   app.get('/search', c => c.json({ q: c.req.query('q') }))
@@ -67,8 +69,8 @@ describe('customLogger', () => {
 
     const all = consoleSpy.mock.calls.map(c => c[0])
 
-    expect(all.some(l => l === '  Headers:')).toBe(true)
-    expect(all.some(l => l === '  Query:')).toBe(true)
+    expect(all.some(l => l.includes('  Headers:'))).toBe(true)
+    expect(all.some(l => l.includes('  Query:'))).toBe(true)
   })
 
   it('redacts sensitive headers in debug mode', async () => {
@@ -152,6 +154,18 @@ describe('customLogger', () => {
     await app.request('/test', {}, baseBindings)
 
     expect(consoleSpy).toHaveBeenCalled()
+  })
+
+  it('prefixes log lines with the request id', async () => {
+    const { app, bindings } = createApp({
+      loggerLevel: LoggerLevel.INFO,
+      ipLogLevel: IpLogLevel.NONE
+    })
+    await app.request('/test', { headers: { 'x-request-id': 'caller-123' } }, bindings)
+
+    const all = consoleSpy.mock.calls.map(c => c.join(' '))
+    expect(all.some(l => l.includes('[req:caller-123] <-- GET /test'))).toBe(true)
+    expect(all.some(l => l.includes('[req:caller-123] --> GET /test'))).toBe(true)
   })
 
   describe('ip logging', () => {

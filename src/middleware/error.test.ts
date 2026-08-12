@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { errorHandler, notFoundHandler } from './error'
+import { correlationId } from './correlation'
 import type { AppInstance } from '@/types'
 
 type ErrorBody = {
@@ -10,6 +11,7 @@ type ErrorBody = {
     message: string
     stack?: string
   }
+  requestId?: string
 }
 
 const asErrorBody = (body: unknown): ErrorBody => body as ErrorBody
@@ -158,11 +160,26 @@ describe('errorHandler', () => {
       error: { message: 'Internal Server Error' }
     })
   })
+
+  it('includes requestId in the envelope when correlation middleware is present', async () => {
+    const app = new Hono<AppInstance>()
+    app.use('*', correlationId)
+    app.get('/error', () => {
+      throw new Error('boom')
+    })
+    app.onError(errorHandler)
+
+    const res = await app.request('/error', {}, bindings)
+    const body = asErrorBody(await res.json())
+    expect(body.requestId).toBe(res.headers.get('x-request-id'))
+    expect(body.requestId).toMatch(/^[0-9a-f-]{36}$/)
+  })
 })
 
 describe('notFoundHandler', () => {
   it('returns 404 with method and path in message', async () => {
     const app = new Hono<AppInstance>()
+    app.use('*', correlationId)
     app.notFound(notFoundHandler)
 
     const res = await app.request('/unknown', {}, bindings)
@@ -174,5 +191,6 @@ describe('notFoundHandler', () => {
       description: 'Verify the URL and HTTP method',
       error: { message: 'Route not found: GET /unknown' }
     })
+    expect(body.requestId).toBe(res.headers.get('x-request-id'))
   })
 })

@@ -25,23 +25,26 @@ export const customLogger = async (c: Context<AppInstance>, next: Next) => {
   const method = c.req.method
   const path = new URL(c.req.url).pathname
   const skip = method === 'HEAD' || method === 'OPTIONS'
+  const tag = c.get('requestId') ? `[req:${c.get('requestId')}]` : ''
 
-  if (!skip) console.log(`<-- ${method} ${path}`)
+  if (!skip) console.log(`${tag} <-- ${method} ${path}`)
 
   const start = Date.now()
   await next()
 
-  if (!skip) console.log(`--> ${method} ${path} ${c.res.status} ${Date.now() - start}ms`)
+  if (!skip) console.log(`${tag} --> ${method} ${path} ${c.res.status} ${Date.now() - start}ms`)
 
   if (c.env.IP_LOG_LEVEL !== IpLogLevel.NONE) {
     const ip = getClientIp(c.req.raw.headers)
     if (ip) {
       const display = c.env.IP_LOG_LEVEL === IpLogLevel.PARTIAL ? anonymizeIp(ip) : ip
-      console.log('  IP:', display)
+      console.log(`  ${tag} IP: ${display}`)
     }
   }
 
   if (c.env.LOGGER_LEVELS === LoggerLevel.DEBUG) {
+    const traceParent = c.get('traceParent')
+    if (traceParent) console.log(`  ${tag} traceParent: ${traceParent}`)
     const headers = Object.fromEntries(
       [...c.req.raw.headers].map(([name, value]) => [
         name,

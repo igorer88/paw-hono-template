@@ -23,13 +23,15 @@ paw-hono-template/
     ├── types.ts                 # Bindings (env), Variables (request-scoped), AppInstance composite type
     ├── middleware/
     │   ├── index.ts             # Barrel — re-exports public API
+    │   ├── correlation.ts       # Request correlation id (resolve/generate, X-Request-Id header, traceParent capture)
     │   ├── error.ts             # errorHandler (stack traces in dev only, generic 5xx) + notFoundHandler
-    │   ├── logger.ts            # Request logging (levels, IP logging, header/query redaction)
+    │   ├── logger.ts            # Request logging (levels, [req:<id>] prefix, IP logging, header/query redaction)
     │   └── security.ts          # CORS middleware (origin whitelist, deny-by-default, 24h preflight cache)
     ├── routes/
     │   └── health.ts            # Health-check sub-router (/health)
     └── shared/
         ├── ip.ts                # Pure functions: getClientIp, normalizeIp, anonymizeIp
+        ├── requestId.ts         # Pure functions: generate/sanitize/extract request ids + traceparent
         └── utils.ts             # Pure functions: isEmptyObject
 ```
 
@@ -63,14 +65,15 @@ Fast, typed routing built on Web Standards. Supports path parameters, query stri
 
 ### Global Middleware Stack
 
-- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds redacted headers and query keys). Debug header dumps use an **allowlist** — only `accept`, `accept-encoding`, `accept-language`, `cache-control`, `connection`, `content-length`, `content-type`, `host`, `user-agent` are logged verbatim; every other header (credentials, tokens, IP chains, custom headers) is `[REDACTED]`. Query keys are logged with values redacted. Client IP logging respects `IP_LOG_LEVEL`: `none`, `full`, `partial` (masked).
+- **Correlation id** (`src/middleware/correlation.ts`) — resolves a request id from a validated inbound `x-request-id` / `x-correlation-id`, or generates a UUID v4 via `crypto.randomUUID()` (cloud-agnostic). Stored on `c.set('requestId')`, echoed on every response as `X-Request-Id`, and captured from W3C `traceparent` when an upstream span exists. Must run before logging and error handling.
+- **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds redacted headers and query keys). Every line is prefixed with the correlation id (`[req:<id>]`). Debug header dumps use an **allowlist** — only `accept`, `accept-encoding`, `accept-language`, `cache-control`, `connection`, `content-length`, `content-type`, `host`, `user-agent` are logged verbatim; every other header (credentials, tokens, IP chains, custom headers) is `[REDACTED]`. Query keys are logged with values redacted. Client IP logging respects `IP_LOG_LEVEL`: `none`, `full`, `partial` (masked).
 - **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and a strict Content-Security-Policy header
 - **CORS** (`src/middleware/security.ts`) — deny-by-default: unmatched origins receive no CORS header. Allows localhost/127.0.0.1 (any protocol/port) only when `ENVIRONMENT=development`. Validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) suffix support; bare `*` is rejected at env validation. Preflight cached 86400s
 
 ### Centralized Error Handling
 
-- **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? } }`. Stack traces only when `ENVIRONMENT=development`. 5xx responses use the generic message `Internal Server Error`; 4xx surface the message only when thrown via `HTTPException` (the deliberate, handler-authored path) — incidental `Error.message` is never echoed.
-- **notFound** — catches unmatched routes, returns `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: {method} {path}" } }` with 404.
+- **onError** — catches unhandled exceptions from middleware and routes, returns `{ success: false, description: "Something went wrong", error: { message, stack? }, requestId }`. Stack traces only when `ENVIRONMENT=development`. 5xx responses use the generic message `Internal Server Error`; 4xx surface the message only when thrown via `HTTPException` (the deliberate, handler-authored path) — incidental `Error.message` is never echoed. `requestId` matches the `X-Request-Id` response header.
+- **notFound** — catches unmatched routes, returns `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: {method} {path}" }, requestId }` with 404.
 
 ### Health Check
 
@@ -91,9 +94,10 @@ Incoming HTTP Request
        │
        ▼
   Middleware chain (registered order for '*' paths):
-     1. customLogger     — log request (level controlled by LOGGER_LEVELS)
-     2. secureHeaders()  — set HSTS, CSP, XSS headers
-     3. customCors       — validate origin, set CORS headers
+     1. correlationId   — stamp request id (X-Request-Id), capture traceparent
+     2. customLogger     — log request (level controlled by LOGGER_LEVELS)
+     3. secureHeaders()  — set HSTS, CSP, XSS headers
+     4. customCors       — validate origin, set CORS headers
         │
         ▼
   Hono matches route?

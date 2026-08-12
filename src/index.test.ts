@@ -59,4 +59,33 @@ describe('App integration', () => {
 
     expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull()
   })
+
+  it('sets an x-request-id header on responses', async () => {
+    const res = await worker.fetch(new Request('http://localhost/'), bindings, ctx)
+
+    expect(res.headers.get('x-request-id')).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it('honors an inbound x-request-id', async () => {
+    const res = await worker.fetch(
+      new Request('http://localhost/health', { headers: { 'x-request-id': 'caller-123' } }),
+      bindings,
+      ctx
+    )
+
+    expect(res.headers.get('x-request-id')).toBe('caller-123')
+  })
+
+  it('includes requestId in the 404 envelope and echoes the inbound id', async () => {
+    const res = await worker.fetch(
+      new Request('http://localhost/unknown', { headers: { 'x-request-id': 'caller-404' } }),
+      bindings,
+      ctx
+    )
+    expect(res.status).toBe(404)
+
+    const body = (await res.json()) as { requestId: string }
+    expect(body.requestId).toBe('caller-404')
+    expect(res.headers.get('x-request-id')).toBe('caller-404')
+  })
 })

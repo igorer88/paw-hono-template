@@ -90,6 +90,7 @@ src/
 ├── types.ts              # Bindings, Variables, AppInstance types
 ├── middleware/
 │   ├── index.ts          # Barrel — re-exports all middleware
+│   ├── correlation.ts    # Correlation id middleware (X-Request-Id header)
 │   ├── error.ts          # Error handler + 404 handler
 │   ├── logger.ts         # Request logging (levels + IP + redaction)
 │   └── security.ts       # Custom CORS middleware
@@ -97,6 +98,7 @@ src/
 │   └── health.ts         # GET /health endpoint
 └── shared/
     ├── ip.ts             # Client IP extraction + anonymization
+    ├── requestId.ts      # Request id + traceparent helpers
     └── utils.ts          # Pure utility functions
 docs/
 ├── architecture.md       # Design intent, request lifecycle, extensibility
@@ -112,6 +114,7 @@ All responses follow a consistent envelope:
   success: boolean
   description?: string   // human-readable summary; always present on errors
   data?: unknown
+  requestId?: string     // correlation id, matches the X-Request-Id response header
   error?: {
     message: string
     stack?: string       // only in development (ENVIRONMENT=development)
@@ -119,9 +122,10 @@ All responses follow a consistent envelope:
 }
 ```
 
-- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message } }` with the preserved status code (500 if unset). 5xx responses use the generic message `Internal Server Error`; 4xx surface a message to the client only when thrown via `HTTPException(status, { message })` — plain `Error.message` is never echoed
-- Unmatched routes return `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: GET /path" } }` with 404
+- Unhandled exceptions return `{ success: false, description: "Something went wrong", error: { message }, requestId }` with the preserved status code (500 if unset). 5xx responses use the generic message `Internal Server Error`; 4xx surface a message to the client only when thrown via `HTTPException(status, { message })` — plain `Error.message` is never echoed
+- Unmatched routes return `{ success: false, description: "Verify the URL and HTTP method", error: { message: "Route not found: GET /path" }, requestId }` with 404
 - Stack traces are never exposed in production (development only)
+- Every response carries an `X-Request-Id` header — a validated inbound `x-request-id`/`x-correlation-id` or a generated UUID v4; quote it in support tickets to correlate logs
 
 ## Linting, Formatting, and Type Checking
 

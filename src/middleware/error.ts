@@ -27,7 +27,8 @@ export const errorHandler = (err: Error, c: Context<AppInstance>) => {
             ? 'Internal Server Error'
             : err.message,
         stack: c.env.ENVIRONMENT === 'development' ? err.stack : undefined
-      }
+      },
+      requestId: c.get('requestId')
     },
     status
   )
@@ -38,7 +39,8 @@ export const notFoundHandler = (c: Context<AppInstance>) => {
     {
       success: false,
       description: 'Verify the URL and HTTP method',
-      error: { message: `Route not found: ${c.req.method} ${c.req.path}` }
+      error: { message: `Route not found: ${c.req.method} ${c.req.path}` },
+      requestId: c.get('requestId')
     },
     404
   )
