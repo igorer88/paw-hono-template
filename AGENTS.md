@@ -7,8 +7,8 @@ See `docs/architecture.md` for full design intent and `README.md` for install in
 - Scaffolding complete. Node >=24.x, pnpm >=11.x enforced via `.npmrc` `engine-strict=true`
 - Vitest configured (`vitest/globals` in tsconfig types); tests live colocated as `*.test.ts` next to sources and run via `pnpm run test`
 - Two environments (`development`, `production`) defined in `wrangler.jsonc`, each setting `ENVIRONMENT` explicitly. `ENVIRONMENT` is required with no default — omitting `--env` fails at cold start.
-- CI, pre-commit hooks — husky + lint-staged + commitlint configured. See `Commit convention` below.
-- CI workflows (`.github/workflows/`): `ci.yml` (typecheck → lint → test:coverage), `codeql.yml` (CodeQL SAST, `security-extended`), `dependency-review.yml` (PR dependency/license gate), `release.yml` (semantic-release, runs under the `release` environment). All actions are pinned to verified SHAs; runners are pinned to `ubuntu-24.04`. `codeql.yml` and `dependency-review.yml` are gated on `github.repository_visibility == 'public'` — they stay skipped on this private repo (both need GitHub Advanced Security there) and auto-enable if the template is made public.
+- CI, pre-commit hooks — husky + lint-staged + commitlint configured. The pre-commit hook also runs `gitleaks protect --staged` when gitleaks is installed (skips gracefully otherwise). See `Commit convention` below.
+- CI workflows (`.github/workflows/`): `ci.yml` (typecheck → lint → test:coverage), `secret-scan.yml` (gitleaks over full history on every push/PR), `codeql.yml` (CodeQL SAST, `security-extended`), `dependency-review.yml` (PR dependency/license gate), `release.yml` (semantic-release, runs under the `release` environment). All actions are pinned to verified SHAs; runners are pinned to `ubuntu-24.04`. `codeql.yml` and `dependency-review.yml` are gated on `github.repository_visibility == 'public'` — they stay skipped on this private repo (both need GitHub Advanced Security there) and auto-enable if the template is made public. Secret scanning relies on gitleaks (hook + `secret-scan.yml`) — see `docs/architecture.md` §8 for the rationale.
 
 ## Package boundaries
 
