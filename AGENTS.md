@@ -6,7 +6,7 @@ See `docs/architecture.md` for full design intent and `README.md` for install in
 
 - Scaffolding complete. Node >=24.x, pnpm >=11.x enforced via `.npmrc` `engine-strict=true`
 - Vitest configured (`vitest/globals` in tsconfig types); tests live colocated as `*.test.ts` next to sources and run via `pnpm run test`
-- Two environments (`development`, `production`) defined in `wrangler.jsonc`, each setting `ENVIRONMENT` explicitly. `ENVIRONMENT` is required with no default — omitting `--env` fails at cold start.
+- Two environments (`development`, `production`) defined in `wrangler.jsonc`, each setting `ENVIRONMENT` explicitly. `ENVIRONMENT` is required with no default — omitting `--env` fails at cold start. The zod schema additionally accepts `staging` (reserved for the prerelease pipeline) but no `staging` env is defined in `wrangler.jsonc`.
 - CI, pre-commit hooks — husky + lint-staged + commitlint configured. The pre-commit hook also runs `gitleaks protect --staged` when gitleaks is installed (skips gracefully otherwise). See `Commit convention` below.
 - CI workflows (`.github/workflows/`): `ci.yml` (typecheck → lint → test:coverage), `secret-scan.yml` (gitleaks over full history on every push/PR), `vuln-scan.yml` (Trivy — dependency vulnerabilities via `fs` scan of `pnpm-lock.yaml`, IaC misconfigurations via `config` scan of the Dockerfile), `codeql.yml` (CodeQL SAST, `security-extended`), `dependency-review.yml` (PR dependency/license gate), `release.yml` (semantic-release, runs under the `release` environment). All actions are pinned to verified SHAs; runners are pinned to `ubuntu-24.04`. `codeql.yml` and `dependency-review.yml` are gated on `github.repository_visibility == 'public'` — they stay skipped on this private repo (both need GitHub Advanced Security there) and auto-enable if the template is made public. Secret scanning relies on gitleaks (hook + `secret-scan.yml`) — see `docs/architecture.md` §8 for the rationale.
 
@@ -172,6 +172,7 @@ Key additional rule: all env vars must be declared in `src/types.ts` under the `
 pnpm install          # install deps (respects engine-strict)
 pnpm run dev          # wrangler dev --env development — local server on localhost:8787, hot reload
 pnpm run deploy       # wrangler deploy --env production --minify (uses production env from wrangler.jsonc)
+pnpm run build        # wrangler deploy --dry-run --outdir dist — local production bundle (CI runs this pre-release)
 pnpm run cf-typegen   # wrangler types --env-interface CloudflareBindings (regenerates worker-configuration.d.ts)
 pnpm run typecheck    # tsc --noEmit — full TypeScript type check
 pnpm run format       # oxfmt --write — rewrites files in place
