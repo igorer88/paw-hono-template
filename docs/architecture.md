@@ -67,8 +67,9 @@ Fast, typed routing built on Web Standards. Supports path parameters, query stri
 
 - **Correlation id** (`src/middleware/correlation.ts`) — resolves a request id from a validated inbound `x-request-id` / `x-correlation-id`, or generates a UUID v4 via `crypto.randomUUID()` (cloud-agnostic). Stored on `c.set('requestId')`, echoed on every response as `X-Request-Id`, and captured from W3C `traceparent` when an upstream span exists. Must run before logging and error handling.
 - **Logging** (`src/middleware/logger.ts`) — respects `LOGGER_LEVELS`: `none` (silent), `info` (method/path/status/duration), `debug` (adds redacted headers and query keys). Every line is prefixed with the correlation id (`[req:<id>]`). Debug header dumps use an **allowlist** — only `accept`, `accept-encoding`, `accept-language`, `cache-control`, `connection`, `content-length`, `content-type`, `host`, `user-agent` are logged verbatim; every other header (credentials, tokens, IP chains, custom headers) is `[REDACTED]`. Query keys are logged with values redacted. Client IP logging respects `IP_LOG_LEVEL`: `none`, `full`, `partial` (masked).
+- **Request Guards** (`src/middleware/guards.ts`) — `requestTimeout` aborts handlers that exceed `REQUEST_TIMEOUT_MS` (default 10000) with a 504 envelope; `bodyLimitGuard` rejects request bodies larger than `MAX_BODY_SIZE` bytes (default 1_000_000) with a 413 envelope (`Payload Too Large`). Both read their limits from `c.env` per request so limits stay cloud-agnostic and environment-configurable.
 - **Security Headers** (`hono/secure-headers`) — sets HSTS, XSS protection, and a strict Content-Security-Policy header
-- **CORS** (`src/middleware/security.ts`) — deny-by-default: unmatched origins receive no CORS header. Allows localhost/127.0.0.1 (any protocol/port) only when `ENVIRONMENT=development`. Validates against comma-separated `ALLOWED_ORIGIN` with wildcard (`*`) suffix support; bare `*` is rejected at env validation. Preflight cached 86400s
+- **CORS** (`src/middleware/security.ts`) — deny-by-default: unmatched origins receive no CORS header. Allows localhost/127.0.0.1 (any protocol/port) only when `ENVIRONMENT=development`. Validates against comma-separated `ALLOWED_ORIGIN`; wildcard `*` is supported only as a leading subdomain label (e.g., `https://*.example.com`). Every entry must be a bare, explicit `http(s)://host[:port]` origin — scheme-less entries, non-http schemes, and paths are rejected at env validation (fail-fast at cold start). Preflight cached 86400s
 
 ### Centralized Error Handling
 
@@ -93,11 +94,13 @@ Wrangler-native tracing with 100% head sampling rate (configurable in `wrangler.
 Incoming HTTP Request
        │
        ▼
-  Middleware chain (registered order for '*' paths):
-     1. correlationId   — stamp request id (X-Request-Id), capture traceparent
-     2. customLogger     — log request (level controlled by LOGGER_LEVELS)
-     3. secureHeaders()  — set HSTS, CSP, XSS headers
-     4. customCors       — validate origin, set CORS headers
+   Middleware chain (registered order for '*' paths):
+     1. correlationId    — stamp request id (X-Request-Id), capture traceparent
+     2. customLogger      — log request (level controlled by LOGGER_LEVELS)
+     3. requestTimeout    — abort at REQUEST_TIMEOUT_MS (504)
+     4. bodyLimitGuard    — reject bodies over MAX_BODY_SIZE (413)
+     5. secureHeaders()   — set HSTS, CSP, XSS headers
+     6. customCors        — validate origin, set CORS headers
         │
         ▼
   Hono matches route?
@@ -126,6 +129,8 @@ type Bindings = {
   ALLOWED_ORIGIN: string
   LOGGER_LEVELS: 'none' | 'info' | 'debug'
   IP_LOG_LEVEL: 'none' | 'full' | 'partial'
+  REQUEST_TIMEOUT_MS: number
+  MAX_BODY_SIZE: number
 }
 ```
 
@@ -133,7 +138,7 @@ Declared in `src/types.ts`. Accessible in every handler and middleware via `c.en
 
 ### Env Var Split
 
-Non-secret vars (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`) live in `wrangler.jsonc` under each env's `vars`, with sensible defaults for local dev. `ENVIRONMENT` is required with no default — it is set explicitly to `development` under `env.development.vars` and `production` under `env.production.vars`, so a deploy that omits `--env` fails fast at cold start instead of silently running in development.
+Non-secret vars (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `REQUEST_TIMEOUT_MS`, `MAX_BODY_SIZE`) live in `wrangler.jsonc` under each env's `vars`, with sensible defaults for local dev. `ENVIRONMENT` is required with no default — it is set explicitly to `development` under `env.development.vars` and `production` under `env.production.vars`, so a deploy that omits `--env` fails fast at cold start instead of silently running in development.
 
 No secrets are required by default. If auth middleware is added later, use `.dev.vars` (local) and `wrangler secret put` (production) — never committed to version control.
 
@@ -215,7 +220,7 @@ Vars are split by sensitivity:
 | Secrets (local)      | `.dev.vars`                         | Gitignored                        |
 | Secrets (production) | `wrangler secret put <NAME>`        | Cloudflare dashboard, not in repo |
 
-**Non-secret vars** (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `ENVIRONMENT`) are in `wrangler.jsonc` under each env's `vars`. `ENVIRONMENT` is required with no default — `development` lives under `env.development.vars`, `production` under `env.production.vars`. A deploy without `--env` fails cold at startup (no silent development mode).
+**Non-secret vars** (`ALLOWED_ORIGIN`, `LOGGER_LEVELS`, `IP_LOG_LEVEL`, `REQUEST_TIMEOUT_MS`, `MAX_BODY_SIZE`, `ENVIRONMENT`) are in `wrangler.jsonc` under each env's `vars`. `ENVIRONMENT` is required with no default — `development` lives under `env.development.vars`, `production` under `env.production.vars`. A deploy without `--env` fails cold at startup (no silent development mode).
 
 No secrets are required by default. If auth middleware is added later, add secrets via `.dev.vars` (local) and `wrangler secret put` (production) — never committed.
 
@@ -225,8 +230,8 @@ After adding or changing bindings (KV, R2, D1, etc.), run `pnpm run cf-typegen` 
 
 - Deny-by-default: origins that do not match return no `Access-Control-Allow-Origin` header (request is blocked client-side)
 - Allows localhost / 127.0.0.1 (any protocol/port) **only when `ENVIRONMENT=development`**
-- Allows origins matching `ALLOWED_ORIGIN` — a comma-separated list supporting `*` wildcard suffixes (e.g., `https://app.example.com,https://*.example.com`)
-- Bare `*` in `ALLOWED_ORIGIN` is rejected at env validation (fail-fast at cold start)
+- Allows origins matching `ALLOWED_ORIGIN` — a comma-separated list of explicit `http(s)://host[:port]` origins, with `*` supported only as a leading subdomain label (e.g., `https://app.example.com,https://*.example.com`)
+- Bare `*`, scheme-less entries, non-http schemes, paths/query/fragments, and misplaced wildcards in `ALLOWED_ORIGIN` are rejected at env validation (fail-fast at cold start)
 - Preflight (`OPTIONS`) responses cached for 86400 seconds (24 hours)
 - `ALLOWED_ORIGIN` defaults to empty — configure it in production or use `wrangler secret put`
 

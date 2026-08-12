@@ -129,19 +129,21 @@ Every response also carries an `X-Request-Id` header set by `src/middleware/corr
 
 ## Status Codes
 
-| Code  | Usage                                              |
-| ----- | -------------------------------------------------- |
-| `200` | OK — successful response                           |
-| `201` | Created — resource created                         |
-| `204` | No Content — success, no body                      |
-| `400` | Bad Request — invalid input or missing parameters  |
-| `401` | Unauthorized — authentication required or failed   |
-| `403` | Forbidden — authenticated but not permitted        |
-| `404` | Not Found — route or resource does not exist       |
-| `409` | Conflict — duplicate entry or state conflict       |
-| `422` | Unprocessable Entity — semantic validation failure |
-| `429` | Too Many Requests — rate limited                   |
-| `500` | Internal Server Error — unhandled exception        |
+| Code  | Usage                                                                                        |
+| ----- | -------------------------------------------------------------------------------------------- |
+| `200` | OK — successful response                                                                     |
+| `201` | Created — resource created                                                                   |
+| `204` | No Content — success, no body                                                                |
+| `400` | Bad Request — invalid input or missing parameters                                            |
+| `401` | Unauthorized — authentication required or failed                                             |
+| `403` | Forbidden — authenticated but not permitted                                                  |
+| `404` | Not Found — route or resource does not exist                                                 |
+| `409` | Conflict — duplicate entry or state conflict                                                 |
+| `413` | Payload Too Large — request body exceeds `MAX_BODY_SIZE` (set by `src/middleware/guards.ts`) |
+| `422` | Unprocessable Entity — semantic validation failure                                           |
+| `429` | Too Many Requests — rate limited                                                             |
+| `500` | Internal Server Error — unhandled exception                                                  |
+| `504` | Gateway Timeout — handler exceeded `REQUEST_TIMEOUT_MS` (set by `src/middleware/guards.ts`)  |
 
 ## Error Handling
 
