@@ -21,10 +21,10 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['text', 'html'],
       thresholds: {
-        lines: 65,
-        functions: 65,
-        branches: 65,
-        statements: 65
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80
       }
     }
   }
