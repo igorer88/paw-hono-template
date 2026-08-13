@@ -33,8 +33,78 @@ lerna-debug.log*
 # misc
 .DS_Store
 
-# AI assistant files
+# AI agents — template is agent-agnostic. AGENTS.md + .assistant/ are the
+# shared home (tracked); every agent-specific config/state dir is ignored so
+# contributors can use whichever AI agent they want without polluting the repo.
+
+# opencode
 .opencode/
 opencode.json
 opencode.jsonc
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Cursor
+.cursor/
+.cursorrules
+.cursorignore
+
+# GitHub Copilot
+.github/copilot-instructions.md
+.github/copilot/
+.copilot/
+
+# Cline
+.clinerules
+.clinerules/
+
+# Continue
+.continue/
+.continuerc
+.continuerc.json
+
+# Gemini CLI
+GEMINI.md
+.gemini/
+
+# Windsurf
+.windsurf/
+WINDURF.md
+
+# OpenAI Codex
+.codex/
+
+# Aider
+.aider/
+.aider.conf.yml
+
+# Roo Code
+.roo/
+
+# Kilo Code
+.kilocode/
+
+# Trae
+.trae/
+
+# Zed
+.zed/
+
+# PearAI
+.pearai/
+
+# Qoder
+.qoder/
+
+# Amp
+.amp/
+
+# Devin
+.devin/
+
+# generic catch-alls (unlisted agents)
+.ai/
+.agents/
 
