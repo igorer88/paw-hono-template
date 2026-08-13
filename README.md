@@ -46,13 +46,7 @@ pnpm scaffold
 
 > If the template repo is private, `degit` cannot fetch the tarball — clone it and copy the files instead (`git clone`, remove `.git`), then run `pnpm scaffold`.
 
-The release pipeline ships with the scaffolded project — the first push to `main` triggers semantic-release from `0.1.0`.
-
-## Project setup
-
-```bash
-pnpm install
-```
+The release pipeline ships with the scaffolded project — the first push to `main` triggers the initial semantic-release (`v1.0.0`).
 
 ## Environment Setup
 
