@@ -14,7 +14,7 @@ jobs:
     # this stays disabled while the repository is private and auto-enables when public.
     if: github.repository_visibility == 'public'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/dependency-review-action@e58c696e52cac8e62d61cc21fda89565d71505d7 # v4.3.1
         with:
           fail-on-severity: high
