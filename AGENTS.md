@@ -132,14 +132,14 @@ This format follows the [Conventional Commits](https://www.conventionalcommits.o
 
 **No direct pushes to `develop`** — every change to `develop` lands via a pull request. Two sync directions:
 
-- **`develop` → `main`** (promote integrated work): open a PR from `develop` to `main` and merge it. The push lands on `main` only; the release pipeline runs there (`chore`/`docs` → no release, `feat`/`fix`/`perf` → release).
-- **`main` → `develop`** (sync back after a release or hotfix): open a PR from `main` to `develop` and merge it. The PR contains exactly the commits `main` is ahead by (e.g. the post-release `chore(release): x.y.z` commit), bringing `develop` back to parity.
+- **`develop` → `main`** (promote integrated work): open a PR from `develop` to `main` and merge it. The push lands on `main` only; the release pipeline runs there (`chore`/`docs` → no release, `feat`/`fix`/`perf` → release). For a pure promotion, fast-forward `main` directly instead (`git checkout main && git merge --ff-only develop && git push origin main`) — allowed, since only `develop` is push-protected — and `main` will match `develop` exactly when no release fires.
+- **`main` → `develop`** (sync back after a release or hotfix): open a PR from `main` to `develop` and merge it. The PR contains exactly the real commits `main` is ahead by (e.g. the post-release `chore(release): x.y.z` commit), bringing `develop` back to parity.
 
-After each cycle, confirm parity before continuing:
+**Parity is content-based, not SHA-based.** GitHub PR merges always add a merge, squash, or rebase artifact to the target branch, so after a PR merge the two tips can never share identical SHAs — one branch is always "ahead" by those artifacts even when the working tree is identical. Treat "in sync" as _content_ parity, and only sync `main` → `develop` when `main` has real content `develop` lacks:
 
 ```bash
 git fetch origin
-git rev-parse origin/main origin/develop   # must print the same SHA twice
+git diff --stat origin/main origin/develop   # empty output = in sync
 ```
 
 ## Publish workflow
