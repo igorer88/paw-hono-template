@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/igorer88/paw-hono-template/compare/v1.0.0...v1.1.0) (2026-08-13)
+
+### 🚀 Features
+
+- **app:** add schema-validated greet service example ([381fa56](https://github.com/igorer88/paw-hono-template/commit/381fa567cfcae50d59d2e96f89db3e26384ae39c))
+
 ## 1.0.0 (2026-08-13)
 
 ### 🚀 Features
