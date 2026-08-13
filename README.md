@@ -26,6 +26,28 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 
 - Request validation beyond env vars (zod) — e.g., payload schemas for route handlers
 
+## Starting a new project
+
+Scaffold a fresh copy of this template (no git history), install dependencies, and rewire it for your project:
+
+```bash
+npx degit igorer88/paw-hono-template my-api
+cd my-api
+pnpm install
+pnpm scaffold
+```
+
+`pnpm scaffold` prompts for the project slug, then:
+
+- resets `package.json` name and version (`0.1.0`)
+- renames the worker in `wrangler.jsonc`, the docker-compose container/image, and the index banner
+- replaces template repo references in the README and clears the changelog
+- deletes the git history and runs `git init` for a clean start (`--no-git` to skip)
+
+> If the template repo is private, `degit` cannot fetch the tarball — clone it and copy the files instead (`git clone`, remove `.git`), then run `pnpm scaffold`.
+
+The release pipeline ships with the scaffolded project — the first push to `main` triggers semantic-release from `0.1.0`.
+
 ## Project setup
 
 ```bash
