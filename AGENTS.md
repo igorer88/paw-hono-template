@@ -128,6 +128,20 @@ This format follows the [Conventional Commits](https://www.conventionalcommits.o
 - `release/vX.Y.Z` — branch from `develop`, merge to `main` + back to `develop`. Only `release/v*` branches trigger the staging release pipeline (`release.yml`); name them with a version prefix.
 - `hotfix/*` — branch from `main`, merge to `main` + `develop`.
 
+### Keeping `main` and `develop` in sync
+
+**No direct pushes to `develop`** — every change to `develop` lands via a pull request. Two sync directions:
+
+- **`develop` → `main`** (promote integrated work): open a PR from `develop` to `main` and merge it. The push lands on `main` only; the release pipeline runs there (`chore`/`docs` → no release, `feat`/`fix`/`perf` → release).
+- **`main` → `develop`** (sync back after a release or hotfix): open a PR from `main` to `develop` and merge it. The PR contains exactly the commits `main` is ahead by (e.g. the post-release `chore(release): x.y.z` commit), bringing `develop` back to parity.
+
+After each cycle, confirm parity before continuing:
+
+```bash
+git fetch origin
+git rev-parse origin/main origin/develop   # must print the same SHA twice
+```
+
 ## Publish workflow
 
 Automated release orchestrated by **semantic-release** via `.github/workflows/release.yml`.
@@ -157,7 +171,7 @@ The `release` job runs under the GitHub **`release` environment**. If protection
 
 After a full release on `main`:
 
-1. Merge `main` back into `develop`
+1. Open a PR from `main` to `develop` and merge it — syncs the post-release commit back without a direct push (see [Keeping `main` and `develop` in sync](#keeping-main-and-develop-in-sync))
 2. `git checkout develop && git pull`
 3. Delete the `release/vX.Y.Z` branch locally and on remote
 
