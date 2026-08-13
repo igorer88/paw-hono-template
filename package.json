@@ -17,6 +17,7 @@
     "test:coverage": "vitest run --coverage",
     "deploy": "wrangler deploy --env production --minify",
     "prepare": "husky",
+    "scaffold": "node scripts/scaffold.mjs",
     "semantic-release": "semantic-release"
   },
   "dependencies": {
@@ -44,5 +45,5 @@
     "node": ">=24.x",
     "pnpm": ">=11.x"
   },
-  "packageManager": "pnpm@11.3.0"
+  "packageManager": "pnpm@11.21.0"
 }
