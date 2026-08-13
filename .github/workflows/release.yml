@@ -1,8 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches: [main, 'release/v*']
+  # Auto-release on push is intentionally disabled (2026-08-12) to keep the
+  # develop -> main sync silent. Re-add the `push` trigger below to restore
+  # automatic releases on every push to main:
+  #   push:
+  #     branches: [main, 'release/v*']
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
