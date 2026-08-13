@@ -1,6 +1,6 @@
 {
   "name": "paw-hono-template",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Hono base template with error handler, security headers, E2E tests, and more.",
   "author": "Igor Escalona",
