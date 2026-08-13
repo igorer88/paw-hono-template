@@ -28,6 +28,20 @@ See `docs/architecture.md` §6 for the full dependency table.
 
 `pnpm-workspace.yaml` allows builds for `esbuild` and `workerd` (needed by wrangler).
 
+## AI agent agnostic
+
+This template is **AI-agent agnostic** — contributors may use whichever AI coding
+agent they prefer. Two locations are the shared, tracked home:
+
+- `AGENTS.md` — the single shared instructions file every agent reads
+- `.assistant/` — the shared tooling home for all agents (agents, commands,
+  skills, rules, MCP). See `.assistant/README.md` for the full layout.
+
+Every agent-specific config dir/file (`.opencode/`, `.claude/`, `.cursor/`,
+`opencode.json`, etc.) is gitignored — see `.gitignore` → `# AI agents`. Never
+commit agent-specific tooling. When adding a new shared capability, place it
+under `.assistant/`, never inside an agent-specific directory.
+
 ## Middleware execution order
 
 Registration order in `src/index.ts` is significant:

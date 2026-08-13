@@ -104,6 +104,7 @@ src/
     ├── requestId.ts      # Request id + traceparent helpers
     ├── utils.ts          # Pure utility functions
     └── validate.ts       # validateInput — Zod-safeParse → Result<T> (no throw)
+.assistant/            # Shared AI tooling home (agent-agnostic: agents/, commands/, skills/, rules/)
 docs/
 ├── architecture.md       # Design intent, request lifecycle, extensibility
 └── code_guidelines.md    # Coding conventions, response shape, error handling
