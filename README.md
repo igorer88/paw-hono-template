@@ -22,10 +22,6 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 - **Infrastructure** — Wrangler observability, `--minify` deploy, single environment config
 - **DevOps** — Conventional commits, automated semantic-release pipeline with changelog generation, git tagging, and GitHub Releases. Staging prereleases from `release/v*` branches, gated behind an approval environment.
 
-## Roadmap
-
-- Request validation beyond env vars (zod) — e.g., payload schemas for route handlers
-
 ## Starting a new project
 
 Scaffold a fresh copy of this template (no git history), install dependencies, and rewire it for your project:
@@ -115,6 +111,8 @@ src/
 │   └── security.ts       # Custom CORS middleware
 ├── routes/
 │   └── health.ts         # GET /health endpoint
+├── services/
+│   └── greet.ts          # Schema-validated business logic (zod params → Result<T>)
 └── shared/
     ├── ip.ts             # Client IP extraction + anonymization
     ├── requestId.ts      # Request id + traceparent helpers
