@@ -22,10 +22,6 @@ A production-ready [Hono](https://hono.dev) base template for **Cloudflare Worke
 - **Infrastructure** — Wrangler observability, `--minify` deploy, single environment config
 - **DevOps** — Conventional commits, automated semantic-release pipeline with changelog generation, git tagging, and GitHub Releases. Staging prereleases from `release/v*` branches, gated behind an approval environment.
 
-## Roadmap
-
-- Request validation beyond env vars (zod) — e.g., payload schemas for route handlers
-
 ## Starting a new project
 
 Scaffold a fresh copy of this template (no git history), install dependencies, and rewire it for your project:
@@ -46,13 +42,7 @@ pnpm scaffold
 
 > If the template repo is private, `degit` cannot fetch the tarball — clone it and copy the files instead (`git clone`, remove `.git`), then run `pnpm scaffold`.
 
-The release pipeline ships with the scaffolded project — the first push to `main` triggers semantic-release from `0.1.0`.
-
-## Project setup
-
-```bash
-pnpm install
-```
+The release pipeline ships with the scaffolded project — the first push to `main` triggers the initial semantic-release (`v1.0.0`).
 
 ## Environment Setup
 
@@ -121,6 +111,8 @@ src/
 │   └── security.ts       # Custom CORS middleware
 ├── routes/
 │   └── health.ts         # GET /health endpoint
+├── services/
+│   └── greet.ts          # Schema-validated business logic (zod params → Result<T>)
 └── shared/
     ├── ip.ts             # Client IP extraction + anonymization
     ├── requestId.ts      # Request id + traceparent helpers
