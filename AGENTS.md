@@ -130,16 +130,16 @@ This format follows the [Conventional Commits](https://www.conventionalcommits.o
 
 ### Keeping `main` and `develop` in sync
 
-**No direct pushes to `develop`** — every change to `develop` lands via a pull request. Two sync directions:
+**Both `main` and `develop` are push-protected** — no direct pushes to either; every change lands via a pull request. `main` is enforced by a repository ruleset (deletion, force-push, linear history, PR-only with squash/rebase, `test` status check required); `develop` has its own ruleset. Two sync directions:
 
-- **`develop` → `main`** (promote integrated work): open a PR from `develop` to `main` and merge it. The push lands on `main` only; the release pipeline runs there (`chore`/`docs` → no release, `feat`/`fix`/`perf` → release).
-- **`main` → `develop`** (sync back after a release or hotfix): open a PR from `main` to `develop` and merge it. The PR contains exactly the commits `main` is ahead by (e.g. the post-release `chore(release): x.y.z` commit), bringing `develop` back to parity.
+- **`develop` → `main`** (promote integrated work): open a PR from `develop` to `main` and merge it (squash or rebase — merge commits are rejected on `main`). The push lands on `main` only; the release pipeline runs there (`chore`/`docs` → no release, `feat`/`fix`/`perf` → release).
+- **`main` → `develop`** (sync back after a release or hotfix): open a PR from `main` to `develop` and merge it. The PR contains exactly the real commits `main` is ahead by (e.g. the post-release `chore(release): x.y.z` commit), bringing `develop` back to parity.
 
-After each cycle, confirm parity before continuing:
+**Parity is content-based, not SHA-based.** GitHub PR merges always add a merge, squash, or rebase artifact to the target branch, so after a PR merge the two tips can never share identical SHAs — one branch is always "ahead" by those artifacts even when the working tree is identical. Treat "in sync" as _content_ parity, and only sync `main` → `develop` when `main` has real content `develop` lacks:
 
 ```bash
 git fetch origin
-git rev-parse origin/main origin/develop   # must print the same SHA twice
+git diff --stat origin/main origin/develop   # empty output = in sync
 ```
 
 ## Publish workflow
@@ -166,6 +166,8 @@ The `release` job runs under the GitHub **`release` environment**. If protection
 - `chore`, `test`, `style`, `refactor`, `docs` commits do not trigger a release
 - `feat` → minor bump, `fix`/`perf` → patch bump, breaking changes (`!`) → major bump
 - Use `BREAKING CHANGE` footer or `type!:` for breaking changes
+
+Releases are configured **per project** — the template ships the pipeline but no bot or host-specific branch-protection config (GitHub, GitLab, etc.). If the project enforces PR-only protection on the release branch (e.g., a GitHub ruleset or a GitLab protected branch), the semantic-release commit-back push must run with a bot/service token authorized to bypass it — otherwise the first release fails at the push step. Alternatively disable `@semantic-release/git` so versions and `CHANGELOG.md` live only in git tags and releases.
 
 ### Post-release
 
