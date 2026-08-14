@@ -167,6 +167,8 @@ The `release` job runs under the GitHub **`release` environment**. If protection
 - `feat` → minor bump, `fix`/`perf` → patch bump, breaking changes (`!`) → major bump
 - Use `BREAKING CHANGE` footer or `type!:` for breaking changes
 
+Releases are configured **per project** — the template ships the pipeline but no bot or host-specific branch-protection config (GitHub, GitLab, etc.). If the project enforces PR-only protection on the release branch (e.g., a GitHub ruleset or a GitLab protected branch), the semantic-release commit-back push must run with a bot/service token authorized to bypass it — otherwise the first release fails at the push step. Alternatively disable `@semantic-release/git` so versions and `CHANGELOG.md` live only in git tags and releases.
+
 ### Post-release
 
 After a full release on `main`:
