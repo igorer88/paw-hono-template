@@ -36,6 +36,7 @@ export const customCors = async (c: Context<AppInstance>, next: Next) => {
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
+    exposeHeaders: ['X-Request-Id'],
     maxAge: 86400 // Cache preflight requests for 24 hours
   })
   return corsMiddleware(c, next)

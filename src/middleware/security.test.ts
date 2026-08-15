@@ -161,6 +161,18 @@ describe('customCors', () => {
     expect(res.headers.get('Access-Control-Allow-Methods')).toContain('GET')
   })
 
+  it('exposes the X-Request-Id header to browser clients', async () => {
+    const res = await app.request(
+      '/test',
+      {
+        headers: { Origin: 'http://localhost:5173' }
+      },
+      bindings
+    )
+
+    expect(res.headers.get('Access-Control-Expose-Headers')).toContain('X-Request-Id')
+  })
+
   it('sets preflight cache header to 24 hours', async () => {
     const res = await app.request(
       '/test',
