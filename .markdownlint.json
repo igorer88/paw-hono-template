@@ -1,0 +1,12 @@
+{
+  "MD013": false,
+  "MD031": false,
+  "MD033": false,
+  "MD010": true,
+  "MD024": true,
+  "MD038": true,
+  "MD040": true,
+  "MD060": {
+    "style": "aligned"
+  }
+}
