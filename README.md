@@ -1,9 +1,12 @@
+# Paw Hono Template
+
+A production-ready Hono template for Cloudflare Workers. Secured by design. Agnostic by architecture — also deployable on AWS Lambda, GCP Cloud Run, Bun, Deno, or Node.js.
+
 <p align="center">
   <img src="docs/assets/paw.svg" width="80" alt="Paw Logo" />
   <img src="docs/assets/hono.svg" width="80" alt="Hono Logo" style="margin-left: 16px;" />
 </p>
 
-<p align="center">Paw is a production-ready Hono template for Cloudflare Workers.<br />Secured by design. Agnostic by architecture — also deployable on AWS Lambda, GCP Cloud Run, Bun, Deno, or Node.js.</p>
 <p align="center">
 <a href="https://nodejs.org" target="_blank"><img src="https://img.shields.io/badge/node-%3E%3D24.x-green.svg" alt="Node.js version" /></a>
 <a href="https://pnpm.io" target="_blank"><img src="https://img.shields.io/badge/pnpm-%3E%3D11.x-cc00ff.svg" alt="pnpm version" /></a>
@@ -97,7 +100,7 @@ Response:
 
 ## Project Structure
 
-```
+```bash
 src/
 ├── index.ts              # App entrypoint — mounts middleware + routes, validates env at cold start
 ├── env.ts                # Zod schema + env validation (single source of truth for vars)
